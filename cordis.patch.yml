@@ -1,0 +1,9 @@
+# dsh-noteboard bundle: mount the host service row.
+#
+# `noteboard` is the HOST-plane NoteboardService. It owns the workspace
+# `.noteboard/` file layer (notes/*.md + canvases/*.canvas + meta.json),
+# serves the /noteboard/api/* JSON routes the browser half calls, registers
+# the `canvas_add_note` model tool, and runs the AI distill path via `llm`.
+- insert:
+    - id: noteboard
+      name: 'dsh-noteboard'
