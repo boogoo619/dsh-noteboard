@@ -60,7 +60,7 @@ export async function transaction(root, label, run, { historyLimit = 50 } = {}) 
     if (tx.files.length) await replace(tx.journal, JSON.stringify(tx, null, 2))
     const limit = [50, 100, 200].includes(historyLimit) ? historyLimit : 50
     for (const old of (await history(root)).filter((entry) => entry.status !== 'pending').slice(limit)) await rm(join(root, '.noteboard/history', `${old.id}.json`), { force: true })
-    return { ...value, operationId: tx.files.length ? id : undefined, changedFiles: tx.files.length }
+    return { ...value, ...(tx.files.length ? { operationId: id } : {}), changedFiles: tx.files.length }
   } catch (e) {
     tx.status = 'failed'; tx.error = String(e.message)
     if (tx.files.length) await replace(tx.journal, JSON.stringify(tx, null, 2))

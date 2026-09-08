@@ -167,14 +167,20 @@ export function buildApi() {
         validateSource(source)
         return { ...draft, source, color: draft.color ?? preferences().defaultColor, title: String(draft.title || '未命名').slice(0, 120), body: String(draft.body ?? ''), tags: tags(draft.tags ?? []) }
       })
-      const created = []
-      for (const draft of prepared) {
+      const fingerprint = (n) => JSON.stringify([n.title.trim(), n.body.trim()])
+      const existing = args.deduplicate ? (await store.listNotes(root)).filter((n) => canvas.nodes.some((node) => node.id === n.id)) : []
+      const byContent = new Map(existing.map((n) => [fingerprint(n), n]))
+      const created = [], skipped = []
+      for (const [index, draft] of prepared.entries()) {
+        const key = fingerprint(draft), duplicate = args.deduplicate && byContent.get(key)
+        if (duplicate) { skipped.push({ index, id: duplicate.id, reason: 'duplicate' }); continue }
         const note = await store.createNote(root, draft)
+        byContent.set(key, note)
         const pos = Number.isFinite(draft.x) && Number.isFinite(draft.y) ? draft : store.findFreeSpot(canvas.nodes, args.center?.x ?? 0, args.center?.y ?? 0)
         canvas.nodes.push(store.noteNode(note, pos.x, pos.y)); created.push(note)
       }
-      await store.writeCanvas(root, name, canvas); await store.clearBackup(root, name)
-      return { ok: true, notes: created, note: created[0], canvasName: name, succeeded: created.map((n) => n.id), failed: [] }
+      if (created.length) { await store.writeCanvas(root, name, canvas); await store.clearBackup(root, name) }
+      return { ok: true, notes: created, ...(created.length ? { note: created[0] } : {}), canvasName: name, succeeded: created.map((n) => n.id), skipped, failed: [] }
     },
     async updateNotes(root, args) {
       const notes = await selected(root, args), patch = args.patch ?? args
@@ -208,6 +214,7 @@ export function buildApi() {
     },
     async layout(root, args) {
       if (!['rearrange', 'ordered', 'left', 'right', 'top', 'bottom', 'centerX', 'centerY', 'distributeX', 'distributeY'].includes(args.action)) throw new Error('未知布局操作')
+      if (args.action === 'ordered' && (!args.canvasName || !args.canvasVersion)) throw new Error('请指定画布和画布版本')
       const { name, canvas } = await target(root, args)
       if (args.action === 'ordered') {
         const ids = args.ids
@@ -284,7 +291,7 @@ export function buildApi() {
     if (reads.has(method) || method === 'switchCanvas') return fn(root, args)
     return transaction(root, labels[method] ?? method, () => fn(root, args), { historyLimit: preferences().historyLimit })
   })
-  api.createNote = async (root, args = {}) => { const result = await api.createNotes(root, { ...args, notes: [args] }); return { ...result, path: `.noteboard/notes/${result.note.file}` } }
+  api.createNote = async (root, args = {}) => { const result = await api.createNotes(root, { ...args, notes: [args] }); return { ...result, ...(result.note ? { path: `.noteboard/notes/${result.note.file}` } : {}) } }
   api.updateNote = (root, args) => api.updateNotes(root, args)
   api.setNoteColor = api.updateNote
   api.addTag = (root, args) => api.updateNotes(root, { ...args, patch: { addTags: [args.tag] } })
