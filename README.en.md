@@ -12,41 +12,6 @@
   <img src="https://badgen.net/badge/node/%3E%3D22.19/blue" alt="node version">
 </p>
 
-## Features
-
-### Canvas
-
-- Workspace-wide infinite canvas shown as a conversation-view tab; layouts can be saved as multiple canvases, and the same note can appear on different canvases
-- Pan, zoom (0.2×–3×), blank-space marquee, group drag, grid snapping
-- Fixed-width note cards with sandboxed Markdown rendering; seven colors, light and dark themes
-- Free-text nodes and tag-clustered category headings, both editable, movable, deletable; headings support suppression and regeneration
-- Search across titles, bodies, and tags; a note library lists and recovers notes not on the current canvas
-- Auto-rearrange by tag (clustering and shelf packing); the layout is backed up before rearranging and restorable in one click
-- Viewport remembered per workspace and canvas
-
-### Editing
-
-- Clicking a card opens an action bar: recolor, tag editing, edit, source backlink, remove from canvas
-- Centered modal editor with live full-Markdown preview; failed saves keep the draft
-- Removing from a canvas only deletes the layout node; the note file is kept
-
-### Conversation capture
-
-- Select text in a conversation: "save to canvas" stores it verbatim with no model involved; "AI distill" has the host call an LLM for title, tags, and body outside the chat flow, falling back to verbatim storage on failure
-- Captured notes record a source backlink (sessionId plus a readable label) and can jump back to the origin position in the conversation, then return to the canvas
-
-### Note citations
-
-- Dual-state bottom action bar (tools / input), reusing the host composer
-- Notes join the composer as citation bubbles, previewable and removable individually or as a group; sending carries the note bodies and structured citations
-- Sending is blocked beyond 32,000 cumulative characters; sends queue automatically while the AI is running
-- Replies completed while the canvas is active raise a notification with a jump to the conversation
-
-### History & restore
-
-- Every write is recorded under `.noteboard/history/` with full before/after file content
-- Any recorded operation can be restored; later changes are detected and conflicting restores are refused
-
 ## Screenshots
 
 **Canvas overview**
@@ -65,6 +30,16 @@
      - canvas-overview.png — canvas overview: notes in several colors + category headings + the top toolbar
      - cite-notes.png — input state: bottom composer expanded with 2–3 note citation bubbles above it
      - capture-from-chat.png — a text selection in the conversation view with the "save to canvas / AI distill" popover -->
+
+## Features
+
+- **Infinite canvas** — pan, zoom, marquee group-move, grid snapping, plus free text and tag-clustered headings; the same notes can live on multiple canvas layouts, switchable anytime
+- **Markdown notes** — each note is a `.md` file with frontmatter; live-preview editor, seven colors, light and dark themes
+- **Capture from conversations** — select text to "save to canvas" verbatim or "AI distill" it into a note; notes carry a source backlink to the origin
+- **Send back to the AI** — notes join the composer as citation bubbles and go out as structured citations; sending is blocked beyond 32,000 cumulative characters
+- **Organizing** — tag-pill focus filter, auto-rearrange by tag (backed up, restorable), search across titles / bodies / tags, off-board note library
+- **AI tools** — 10 note tools and 4 bundled workflows let the model query, modify, organize, and synthesize notes (tables below)
+- **History & restore** — every write shows a before/after diff and is restorable; conflicting restores are refused
 
 ## AI Tools & Workflows
 
