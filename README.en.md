@@ -3,8 +3,9 @@
 <p align="center"><a href="README.md">中文</a> | English</p>
 
 <p align="center">
-  A <b>noteboard canvas</b> for the DeepSeek Harness (DSH) Web GUI: a workspace-wide infinite canvas where every note is a plain Markdown file and every canvas is a JSON Canvas layout — content and placement are fully separated, readable and editable by both humans and Git.<br>
-  Select any text in a conversation to capture it onto the canvas; 10 AI tools and 4 bundled workflows let the model query, organize, and synthesize your notes directly.
+  The longer you work with an AI, the more things are worth keeping — an idea, a conclusion, a to-do — and they all end up buried in the conversation scrollback.<br>
+  <b>dsh-noteboard</b> adds a <b>noteboard canvas</b> next to your conversations in the DeepSeek Harness (DSH) Web GUI: see something worth keeping? Select it and pin it as a note. Collected enough? Drag, tag, and auto-organize them on the canvas. Ready to dig deeper? Cite notes back into the composer and let the AI build on them.<br>
+  Every note is a plain Markdown file in your own workspace.
 </p>
 
 <p align="center">
@@ -13,55 +14,49 @@
   <img src="https://badgen.net/badge/node/%3E%3D22.19/blue" alt="node version">
 </p>
 
-## Features
-
-- **Infinite canvas** — pan, zoom (0.2×–3×, cursor-anchored), dot grid, drag-to-marquee with group move and grid snapping
-- **Markdown notes** — each note is a plain `.md` file with YAML frontmatter; seven colors, light/dark themes; "remove from canvas" only deletes the layout node, never the file
-- **Multiple canvases** — the same note can appear at different positions on several canvases; "save as new canvas" snapshots the layout without copying files
-- **Tags & rearrange** — add/remove tags on cards, tap a tag pill to focus-filter; auto-rearrange by tag (clustering + shelf packing) with automatic backup and one-click restore
-- **Search & library** — top-centered search across titles / bodies / tags; an off-board library to recover notes not on the current canvas
-- **Free text & headings** — free text owned by its canvas, editable/movable/duplicable; auto-generated category headings can be edited, suppressed, and regenerated
-- **Conversation capture** — select text in a conversation: "save to canvas" stores it verbatim (no model), or "AI distill" has the Host call an LLM directly to produce title, tags, and body (outside the chat flow, with verbatim fallback on failure)
-- **Source backlinks** — notes record sessionId plus a readable label; jump back to the highlighted origin in the conversation, then return to the canvas
-- **Cited sending** — a dual-state bottom bar adds notes as structured citations to the host composer: bubble previews, per-note / whole-group removal, cumulative length check before sending (32,000-character cap)
-- **AI tools & workflows** — 10 model tools (query / create / update / add / remove / layout / save-as / history / restore) and 4 bundled workflows registered with the plugin
-- **History & restore** — every write lands in `.noteboard/history/`; inspect before/after content and restore, with conflict detection that refuses to overwrite
-
 ## Screenshots
 
-**Desktop width · light theme**
+**The canvas at a glance**
 
-![Desktop width · light theme](screenshots/desktop-light.png)
+![The canvas at a glance](screenshots/canvas-overview.png)
 
-**Desktop width · dark theme**
+**Citing notes into the composer to send to the AI**
 
-![Desktop width · dark theme](screenshots/desktop-dark.png)
+![Citing notes into the composer](screenshots/cite-notes.png)
 
-**Narrow window · dark theme**
+**Selecting text in a conversation to create a note**
 
-![Narrow window · dark theme](screenshots/narrow-dark.png)
+![Selecting text in a conversation to create a note](screenshots/capture-from-chat.png)
 
-## Capabilities
+<!-- Put screenshots in the screenshots/ directory:
+     - canvas-overview.png — the canvas at a glance: several notes in different colors + category headings + the top toolbar
+     - cite-notes.png — input state: the bottom composer expanded, with 2–3 note citation bubbles above it ("notes back to the AI")
+     - capture-from-chat.png — a text selection in the conversation view with the "save to canvas / AI distill" popover (or the resulting note with its backlink) -->
 
-| Capability | Details |
-| --- | --- |
-| Canvas tab | Registered via `conversation.view` alongside conversation views; canvas data is workspace-level and shared by all sessions |
-| Viewport | Blank-drag / trackpad panning, Ctrl/⌘+wheel and pinch zoom (0.2–3×, cursor-anchored), dot grid fading with zoom, fit-all overview |
-| Note cards | Fixed 260px width, sandboxed Markdown rendering (raw HTML disabled), overflow clipped with bottom fade; drag writes through (debounced), dragging raises to top |
-| Card action bar | Click a card for: recolor, tag editing, edit, source backlink, remove from canvas |
-| Editor | Centered modal with live full-Markdown preview; failed saves keep the draft with retry |
-| Bulk operations | Blank marquee (Shift appends), Shift/Meta/Ctrl click toggles membership, unified group-drag snapping, bulk color & tags, align/distribute |
-| Auto rearrange | Tag clustering + ⌈√n⌉ adaptive grids + shelf packing; backs up to `.backup.json` first with restore; rearranging only selected notes leaves headings untouched |
-| Free text | Owned by its canvas, no files; 14/20/28px sizes and theme colors; mixed selection, align/distribute; duplicates offset by 24px |
-| Category headings | Auto-generated and editable; manual edits convert to free text and record suppression; regeneration clears suppression and fully rearranges |
-| Dual-state action bar | Bottom-centered tool state (select / pan / new note / new text / AI assistant) ⇄ input state (max 560px wide); switching never moves the camera |
-| Structured citations | Note bubbles sit above the host composer; click a name to preview, × to remove; deduplicated by ID; bodies re-read at send time, stale citations removable |
-| Reply notices | Subscribes to host Chat turns; completed replies during canvas activity toast a notice (three lines max, 12s auto-dismiss, hover pauses) with a jump-to-conversation action |
-| Conversation capture | `shell.overlay` selection popover: "save to canvas" stores verbatim; "AI distill" calls the `llm` Service once for title/tags/body, falling back to verbatim on failure |
-| Source backlinks | Frontmatter always keeps a readable label; "open conversation" appears when `sessionId` resolves; locates by session / view / loaded history / collapsed sections / matched selection, distinguishing full, partial, and ambiguous matches |
-| History & restore | `.noteboard/history/` records every write; list operations, inspect before/after file content, restore with later-change conflict detection |
-| Data compatibility | YAML Document preserves nested sources, unknown fields, and comments; canvases keep external top-level fields (incl. `edges`/`groups`); versions are content SHA256; legacy RPC accepts version-less calls |
-| Viewport memory | Viewport remembered per workspace and canvas; empty canvases show onboarding hints |
+## What you can do
+
+### From conversation to notes
+
+- See something worth keeping — whether it's the AI's answer or your own message? Select it and hit **"save to canvas"** to store it verbatim, or **"AI distill"** to have a model condense it into a note with a title and tags (distill failures fall back to saving the original text)
+- Every note captured this way remembers where it came from: "open conversation" jumps back to the exact spot it came from, and one click returns you to the canvas
+
+### From notes back to the conversation
+
+- The bottom action bar expands into a composer, so you can add notes to what you send the AI
+- Cited notes appear as colored bubbles above the composer — previewable and removable; when you send, the AI receives the notes' full bodies as structured citations, so you never have to describe "that yellow note of mine"
+- Sends queue automatically while the AI is busy; overly long content (over 32,000 characters) is flagged before sending
+
+### Organizing on the canvas
+
+- An infinite canvas: drag to arrange, wheel to zoom, marquee to move groups; seven colors, light and dark themes
+- Tag your notes; tap a tag pill and the canvas highlights just that group; one click rearranges everything by tag — your manual layout is backed up first and restorable at any time
+- Write free text anywhere; category headings cluster by tag automatically — all editable, movable, deletable
+- As things pile up: search covers titles, bodies, and tags; notes not on the current canvas can be recovered from the note library
+- The same notes can live on multiple canvases — an "idea pool" and a "this week's picks", for instance — switch between them freely
+
+### Nothing is lost to a bad edit
+
+Every write is recorded in history: which file changed and what it looked like before, inspectable on demand and restorable step by step; later changes are detected rather than silently overwritten.
 
 ## Install
 
@@ -104,60 +99,45 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 
 Restart `dsh web` after installing.
 
-## Usage
+## How to use
 
-1. Open any session and switch to the **Noteboard** tab: the whole workspace shares one pool of notes, and the active canvas renders here.
-2. Double-click empty space to create a note; click a card to recolor, tag, edit (live Markdown preview), open its source, or remove it from the canvas.
-3. Select text in a conversation to get "save to canvas" / "AI distill"; new notes carry a source backlink — "open conversation" jumps to the highlighted origin, then returns to the canvas.
-4. Tap a tag pill on a card to focus-filter; the toolbar rearranges by tag in one click (layout backed up first, restorable).
-5. Switch the bottom bar to input state to add notes as citation bubbles to the host composer and send them with your message; sends queue automatically while the AI is busy.
-6. Just say "organize these notes by theme" in the conversation — the model reads and writes the canvas through `noteboard_*` tools and bundled workflows; every operation is inspectable and restorable in the canvas history.
+1. After installing and restarting, open any session: the view now has a **Noteboard** tab at the top. The canvas is shared across the whole workspace — every session shows the same pool of notes.
+2. **Capture**: switch back to the conversation, select a passage → "save to canvas" or "AI distill". The new note lands near the center of the canvas with a backlink to the original text.
+3. **Organize**: double-click empty space for a new note; click a card to recolor, retag, or edit it (write on the left, live preview on the right); drag to arrange; one click rearranges by tag.
+4. **Use**: expand the composer from the bottom action bar, add the notes you want to discuss as citation bubbles, type your question, and send.
+5. **Delegate**: just tell the AI in the conversation "organize these notes by theme" — see below.
 
-## AI Tools & Workflows
+## Let the AI tidy up for you
 
-10 model tools registered with the plugin:
+The plugin registers 10 note tools (query, create, update, add / remove, layout, save-as, history, restore) that the model calls as needed — you never have to remember any tool names, just ask in plain language. Four bundled workflows cover the most common tidying scenarios:
 
-| Tool | Description |
+| You can say | What the AI does |
 | --- | --- |
-| `canvas_add_note` | Create a note and place it on a canvas; optionally record `derivedFrom` provenance |
-| `noteboard_query` | Search workspace notes, or read full content, versions, and sources by ids |
-| `noteboard_create` | Batch-create notes (up to 200 per call) |
-| `noteboard_update` | Modify notes (must carry read-time versions); content edits affect every canvas |
-| `noteboard_add` | Place existing notes onto a canvas without copying files |
-| `noteboard_remove` | Remove notes from a canvas only; files are kept |
-| `noteboard_layout` | Rearrange, align, or distribute notes (must carry the canvas version) |
-| `noteboard_save_as` | Save the canvas layout under a new name |
-| `noteboard_history` | List operations; inspect before/after file content |
-| `noteboard_restore` | Restore an operation, refusing to overwrite later changes |
+| "Organize these notes by theme" | Identifies themes, reuses existing tags, rearranges the layout (noteboard-organize) |
+| "Compare the plans in these notes" | Compares along shared dimensions, spots disagreements, saves conclusions as a new note if you ask (noteboard-compare) |
+| "Break this idea into action items" | Separates goals, steps, and dependencies into action notes with provenance (noteboard-actions) |
+| "Merge the duplicate notes" | Finds duplicates and complements, synthesizes a note, keeps or removes originals as you ask (noteboard-synthesize) |
 
-Plus 4 bundled workflows (skills):
+Regular actions use the current session model; "AI distill" can use a separately configured model (see [Settings](#settings)).
 
-| Workflow | Description |
-| --- | --- |
-| `noteboard-organize` | Group notes by theme, tag them, tidy the layout |
-| `noteboard-compare` | Compare plans captured in notes; weigh trade-offs and spot disagreements |
-| `noteboard-actions` | Break ideas in notes down into action items or implementation steps |
-| `noteboard-synthesize` | Merge duplicate notes, deduplicate, or synthesize conclusions |
+## Where your data lives
 
-Regular AI actions use the session model; the "AI distill" model is configured separately in plugin settings.
-
-## Data Format
+Your notes stay in your own workspace — no database involved:
 
 ```
 <workspace>/.noteboard/
-├── meta.json                      # { "activeCanvas": "Main" }
-├── canvases/<name>.canvas         # JSON Canvas 1.0 layout (Obsidian Canvas compatible)
-├── notes/<date>-<title>-<shortid>.md  # the note itself: Markdown + YAML frontmatter
-└── history/                       # operation history (diffs & restore)
+├── meta.json                # the currently active canvas
+├── canvases/                # canvas layouts (JSON Canvas; Obsidian can open them directly)
+├── notes/                   # the notes themselves: plain Markdown files
+└── history/                 # operation history
 ```
 
-- Note frontmatter: `id`, `title`, `color`, `tags`, `created`, `source` (backlink), `derivedFrom` (provenance); unrecognized fields are always preserved
-- A canvas file is only a layout view: node `id`s foreign-key note `id`s, and `text` uses Obsidian-style relative references; other JSON Canvas tools can open it directly
-- Content versions are SHA256; writes go through a queue with conflict checks
+- Each note is a `.md` file with YAML frontmatter — title, color, tags, and source are all visible at a glance; edit by hand, script them, or keep them in Git
+- A canvas file only describes "which note goes where"; removing a note from a canvas just takes it off the layout — the file remains, recoverable from the note library anytime
 
 ## Settings
 
-Under "Settings → Plugins → Plugin config", expand the Noteboard card:
+Under "Settings → Plugins → Plugin config", the Noteboard card configures the model used by "AI distill":
 
 | Option | Description |
 | --- | --- |
@@ -179,7 +159,7 @@ npm run build       # tsdown build: host service + client bundle → lib/
 ## Boundaries & Known Limitations
 
 - No UI for edges or groups yet; the file format already reserves them
-- No file watching: the canvas re-reads everything on tab activation and before each RPC operation
+- No file watching: the canvas re-reads everything on tab activation and before each operation
 - Single-user assumption: no cross-process file locking, no realtime collaboration
 - The bottom action bar adapts to host DOM markers and injection APIs; re-verify after host upgrades rather than trusting version numbers
 - No full in-canvas chat, rich text, or general undo/redo
