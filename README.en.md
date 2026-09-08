@@ -12,7 +12,7 @@
   <img src="https://badgen.net/badge/node/%3E%3D22.19/blue" alt="node version">
 </p>
 
-## Screenshots
+## Screenshots 📸
 
 **Canvas overview**
 
@@ -36,7 +36,7 @@
      - capture-from-chat.png — a text selection in the conversation view with the "save to canvas / AI distill" popover
      - backlink-jump.png — the conversation view after clicking a note's "source / open conversation", with the origin text highlighted -->
 
-## Features
+## Features ✨
 
 - **Infinite canvas** — pan, zoom, marquee group-move, grid snapping, plus free text and tag-clustered headings; the same notes can live on multiple canvas layouts, switchable anytime
 - **Markdown notes** — each note is a `.md` file with frontmatter; live-preview editor, seven colors, light and dark themes
@@ -47,7 +47,7 @@
 - **AI tools** — 10 note tools and 4 bundled workflows let the model query, modify, organize, and synthesize notes (tables below)
 - **History & restore** — every write shows a before/after diff and is restorable; conflicting restores are refused
 
-## AI Tools & Workflows
+## AI Tools & Workflows 🤖
 
 10 model tools registered with the plugin:
 
@@ -75,7 +75,7 @@ Plus 4 bundled workflows (skills):
 
 Regular operations use the session model; the "AI distill" model is configured separately in plugin settings.
 
-## Install
+## Install 📦
 
 Requires the `dsh` CLI (`>= 0.1.2-rc.1`) and Node `>= 22.19.0`.
 
@@ -116,7 +116,7 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 
 Restart `dsh web` after installing.
 
-## Data Format
+## Data Format 🗂️
 
 ```
 <workspace>/.noteboard/
@@ -130,7 +130,7 @@ Restart `dsh web` after installing.
 - A canvas file only describes the layout: node `id`s foreign-key note `id`s, and `text` uses Obsidian-style relative references; other JSON Canvas tools can open it directly
 - Content versions are SHA256; writes go through a queue with conflict checks
 
-## Settings
+## Settings ⚙️
 
 Under "Settings → Plugins → Plugin config", the Noteboard card:
 
@@ -140,7 +140,7 @@ Under "Settings → Plugins → Plugin config", the Noteboard card:
 | Distill model | Model id under that provider; empty picks its first model (default: empty) |
 | Distill prompt | Custom distill prompt; empty uses the built-in one (default: empty) |
 
-## Development
+## Development 🛠️
 
 ```sh
 pnpm install
@@ -151,7 +151,7 @@ npm run build       # tsdown build: host service + client bundle → lib/
 
 `test/browser-*.mjs` are browser end-to-end scripts that need real Harness instances running locally (ports 3081–3083 by default), with auth state and logs under `/tmp`; screenshots go to `artifacts/` (gitignored). Client changes take effect on refresh after a build; host-side changes need an instance restart.
 
-## Boundaries & Known Limitations
+## Boundaries & Known Limitations ⚠️
 
 - No UI for edges or groups yet; the file format already reserves them
 - No file watching: the canvas re-reads everything on tab activation and before each RPC operation
@@ -159,6 +159,10 @@ npm run build       # tsdown build: host service + client bundle → lib/
 - The bottom action bar adapts to host DOM markers and injection APIs; re-verify after host upgrades rather than trusting version numbers
 - No full in-canvas chat, rich text, or general undo/redo
 
-## License
+## Acknowledgments 💛
+
+Thanks to **EE** for sponsoring this project with tokens, supporting the plugin's development and verification. 🙏✨
+
+## License 📄
 
 [MIT](./LICENSE)

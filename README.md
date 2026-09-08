@@ -12,7 +12,7 @@
   <img src="https://badgen.net/badge/node/%3E%3D22.19/blue" alt="node version">
 </p>
 
-## 效果
+## 效果 📸
 
 **画布总览**
 
@@ -36,7 +36,7 @@
      - capture-from-chat.png —— 对话视图中框选一段文字，浮出「存入画布 / AI 提炼」按钮
      - backlink-jump.png —— 点击便签「来源 / 打开对话」后跳转到对话视图、原文位置高亮的效果 -->
 
-## 功能
+## 功能 ✨
 
 - **无限画布** —— 平移、缩放、框选批量移动、网格吸附，可添加自由文本与自动分类标题；同一批便签可保存多张画布布局，随时切换
 - **Markdown 便签** —— 每张便签是一个带 frontmatter 的 `.md` 文件；编辑器实时预览，七种颜色、亮暗双主题
@@ -47,7 +47,7 @@
 - **AI 工具** —— 10 个便签工具与 4 个内置工作流，模型可直接查询、修改、整理、综合便签（见下）
 - **历史与恢复** —— 每次写操作可查看前后差异并恢复，后续修改冲突时拒绝覆盖
 
-## AI 工具与工作流
+## AI 工具与工作流 🤖
 
 随插件注册 10 个模型工具：
 
@@ -75,7 +75,7 @@
 
 普通操作使用会话模型；「AI 提炼」的模型在插件设置中单独配置。
 
-## 安装
+## 安装 📦
 
 需要 `dsh` CLI（`>= 0.1.2-rc.1`），Node `>= 22.19.0`。
 
@@ -116,7 +116,7 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 
 安装后重启 `dsh web` 生效。
 
-## 数据格式
+## 数据格式 🗂️
 
 ```
 <workspace>/.noteboard/
@@ -130,7 +130,7 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 - 画布文件只描述布局：节点 `id` 与便签 `id` 互为外键，`text` 使用 Obsidian 风格相对引用；其他 JSON Canvas 工具可直接打开
 - 内容版本为 SHA256；写入走队列并做冲突检查
 
-## 设置
+## 设置 ⚙️
 
 侧栏「设置 → 插件 → 插件配置」中的「便签画布」卡片：
 
@@ -140,7 +140,7 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 | 提炼模型 | 该 provider 下的模型 id；留空选择其第一个模型（默认空） |
 | 提炼提示词 | 自定义提炼提示词；留空使用内置提示词（默认空） |
 
-## 开发
+## 开发 🛠️
 
 ```sh
 pnpm install
@@ -151,7 +151,7 @@ npm run build       # tsdown 构建：Host 服务 + 客户端 bundle → lib/
 
 `test/browser-*.mjs` 为浏览器端到端脚本，需要本地运行的真实 Harness 实例（默认 3081–3083 端口），认证状态与日志位于 `/tmp`，截图输出至 `artifacts/`（已 gitignore）。客户端代码修改构建后刷新页面即可，Host 侧修改需重启实例。
 
-## 边界与已知限制
+## 边界与已知限制 ⚠️
 
 - 不提供连接线（edges）与成组（groups）的 UI，文件格式已为其留位
 - 不监听文件变更：切到画布标签或每次 RPC 操作前整体重读
@@ -159,6 +159,10 @@ npm run build       # tsdown 构建：Host 服务 + 客户端 bundle → lib/
 - 底部操作区适配依赖宿主的 DOM 标记与注入接口，宿主升级后需复验，不能仅凭版本号判定兼容
 - 画布内不做完整聊天、富文本与通用 Undo/Redo
 
-## 许可
+## 致谢 💛
+
+感谢 **EE** 为本项目提供 Token 赞助，支持了本插件的开发与验证。🙏✨
+
+## 许可 📄
 
 [MIT](./LICENSE)
