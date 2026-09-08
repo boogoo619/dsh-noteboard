@@ -1,0 +1,24 @@
+name: Publish to npm
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+permissions:
+  id-token: write # Required for OIDC trusted publishing
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Node 24 bundles npm 11.x, the first line with OIDC trusted
+          # publishing support (npm bundled with Node 22 lacks it).
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: npm run build
+      - run: npx vitest run
+      - run: npm publish
