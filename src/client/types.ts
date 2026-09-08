@@ -25,7 +25,7 @@ export interface NbNote {
   color: string
   tags: string[]
   created: string
-  source: { sessionId?: string | null; seq?: number | string | null; label?: string; text?: string; fragments?: SourceFragment[] } | null
+  source: { sessionId?: string | null; seq?: number | string | null; label?: string; text?: string; fragments?: SourceFragment[]; path?: string; url?: string; startLine?: number; endLine?: number } | null
   body: string
 }
 export interface NbNode {

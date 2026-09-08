@@ -4,6 +4,7 @@ import { rearrangeNodes } from './layout.mjs'
 import { distill, distillWithRoute, listLlmOptions, resolveModel } from './distill.mjs'
 import { resolvePreferences } from './preferences.mjs'
 import { randomUUID } from 'node:crypto'
+import { validateSource } from './sources.mjs'
 import { nodeKind, nodeText, headingTag, normalizeNode, detachHeading, suppressHeading, applyManualNodes } from './nodes.mjs'
 
 const hashCanvas = (c) => revision(JSON.stringify(c))
@@ -160,9 +161,15 @@ export function buildApi() {
       const { name, canvas } = await target(root, args)
       const drafts = args.notes
       if (!Array.isArray(drafts) || !drafts.length || drafts.length > 200) throw new Error('每次创建 1–200 张便签')
+      const prepared = drafts.map((draft) => {
+        if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('便签草稿必须是对象')
+        const source = Object.hasOwn(draft, 'source') ? draft.source : args.source
+        validateSource(source)
+        return { ...draft, source, color: draft.color ?? preferences().defaultColor, title: String(draft.title || '未命名').slice(0, 120), body: String(draft.body ?? ''), tags: tags(draft.tags ?? []) }
+      })
       const created = []
-      for (const draft of drafts) {
-        const note = await store.createNote(root, { ...draft, color: draft.color ?? preferences().defaultColor, title: String(draft.title || '未命名').slice(0, 120), body: String(draft.body ?? ''), tags: tags(draft.tags ?? []) })
+      for (const draft of prepared) {
+        const note = await store.createNote(root, draft)
         const pos = Number.isFinite(draft.x) && Number.isFinite(draft.y) ? draft : store.findFreeSpot(canvas.nodes, args.center?.x ?? 0, args.center?.y ?? 0)
         canvas.nodes.push(store.noteNode(note, pos.x, pos.y)); created.push(note)
       }

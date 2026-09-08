@@ -1,7 +1,8 @@
+import { sourceSchema } from './sources.mjs'
 const string = { type: 'string' }
 const ids = { type: 'array', items: string, minItems: 1 }
 const versions = { type: 'object', additionalProperties: string }
-const note = { type: 'object', properties: { title: string, body: string, tags: ids, color: string, derivedFrom: ids }, required: ['title', 'body'] }
+const note = { type: 'object', properties: { title: string, body: string, tags: ids, color: string, source: sourceSchema, derivedFrom: ids }, required: ['title', 'body'] }
 const patch = { type: 'object', properties: { title: string, body: string, color: string, tags: { type: 'array', items: string }, addTags: ids, removeTags: ids }, additionalProperties: false }
 const definitions = [
   ['canvas_add_note', 'createNote', '创建一张便签并放入指定画布；derivedFrom 记录作为依据的便签 ID。', { ...note.properties, canvasName: string, sessionId: string, sourceLabel: string }, ['title', 'body']],
@@ -31,7 +32,7 @@ export function registerIntelligence(ctx, api) {
         const root = exec?.agent?.session?.header?.cwd
         if (!root) throw new Error('无法解析会话工作区')
         if (method === 'updateNotes' && args.ids.some((id) => !args.versions?.[id])) throw new Error('每张便签必须提供读取时的 version')
-        if (method === 'createNote' && args.sessionId) args = { ...args, source: { sessionId: args.sessionId, label: args.sourceLabel ?? '' } }
+        if (method === 'createNote' && args.sessionId && !args.source) args = { ...args, source: { sessionId: args.sessionId, label: args.sourceLabel ?? '' } }
         const result = await api[method](root, args)
         return Array.isArray(result) ? { operations: result } : result
       },
