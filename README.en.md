@@ -132,13 +132,25 @@ Restart `dsh web` after installing.
 
 ## Settings ⚙️
 
-Under "Settings → Plugins → Plugin config", the Noteboard card:
+Under "Settings → Plugins", expand the initially collapsed Noteboard entry. Preferences are saved by the host and apply across workspaces; viewport positions remain separate for each workspace and canvas.
 
 | Option | Description |
 | --- | --- |
-| Distill provider | Provider routing key for "AI distill"; empty picks the first available provider (default: empty) |
-| Distill model | Model id under that provider; empty picks its first model (default: empty) |
-| Distill prompt | Custom distill prompt; empty uses the built-in one (default: empty) |
+| Selection capture toolbar | On by default; disable the capture actions shown after selecting conversation text |
+| After capture | Stay in conversation (default) or open the note; never jump automatically after switching sessions |
+| Default note color | Seven colors, yellow by default; affects new notes only, explicit colors take precedence |
+| Background grid / snap while dragging | Both on by default, independently controlled; shared 24-unit spacing without moving existing content |
+| Plain mouse wheel | Pan (default) or zoom; Ctrl / Command + wheel and pinch always zoom |
+| Opening view | Restore the last view (default) or fit all; explicit note navigation takes priority |
+| Distill provider / model | Automatically choose the first provider with models and its first model; show the resolved selection and report unavailable explicit selections |
+| Distill length | Short (~100), standard (~200, default), detailed (~400); Chinese characters or English words, without truncating the generated body |
+| Output language | Chinese (default), English, or match the source |
+| Additional requirements | Advanced content and style instructions, empty by default; the plugin owns the title, tags, and Markdown body output contract |
+| History retention | Latest 50 (default), 100, or 200 operations per workspace; reductions take effect after its next successful write, preserving note/canvas files and pending operations |
+
+Each group can be reset. Switches and selections save immediately; text saves after 400ms idle or on blur. Failed edits remain available for retry. "Test distill" calls the model with saved preferences and submitted sample text without creating notes or history. These model settings only affect AI distill; conversations and note tools use the conversation model.
+
+The old `prompt` setting is no longer consumed; use additional requirements instead. Restart Harness after updating the host plugin; refreshing the browser alone does not reload backend code.
 
 ## Development 🛠️
 

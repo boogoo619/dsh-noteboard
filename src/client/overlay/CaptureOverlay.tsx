@@ -3,6 +3,8 @@ import { Check, X, Sparkles, Plus, ArrowUpRight, AlertCircle, RotateCcw, LoaderC
 import { rpc } from '../api'
 import { IconButton } from '../ui'
 import { titleFromText, type SourceFragment } from '../types'
+import { type PreferenceStore } from '../preferences'
+import { usePreferences } from '../usePreferences'
 
 export function currentSessionOf(sessions: any) {
   const s = sessions?.list?.getSnapshot(), sessionId = s?.current
@@ -36,13 +38,14 @@ export function captureSelection(sessions: any, integration?: any): Capture | nu
     text, root: current.cwd, sessionId: current.sessionId,
     source: { sessionId: current.sessionId, label: `${current.title || '对话'} · ${new Date().toLocaleString()}`, text, fragments } }
 }
-export function CaptureOverlay({ sessions, integration }: any) {
+export function CaptureOverlay({ sessions, integration, preferences }: { sessions: any; integration: any; preferences: PreferenceStore }) {
+  const { value: prefs } = usePreferences(preferences)
   const [capture, setCapture] = useState<Capture | null>(null), [notices, setNotices] = useState<Notice[]>([])
   const [expanded, setExpanded] = useState(false), [paused, setPaused] = useState(false), [revision, update] = useState(0)
   const busy = useRef(new Set<string>()), alive = useRef(true), pauseStart = useRef(0)
   const [position, setPosition] = useState({ x: innerWidth / 2, y: 96 })
   useEffect(() => {
-    alive.current = true
+    if (!prefs.captureEnabled) { setCapture(null); return }
     const selection = () => { if (!busy.current.size) setCapture(captureSelection(sessions, integration)) }
     const down = (e: PointerEvent) => { if (!(e.target as HTMLElement).closest('.nb-overlay')) setCapture(null) }
     const scroll = () => setCapture(null)
@@ -50,6 +53,10 @@ export function CaptureOverlay({ sessions, integration }: any) {
     document.addEventListener('keyup', selection)
     document.addEventListener('pointerdown', down)
     document.addEventListener('scroll', scroll, true)
+    return () => { document.removeEventListener('mouseup', selection); document.removeEventListener('keyup', selection); document.removeEventListener('pointerdown', down); document.removeEventListener('scroll', scroll, true) }
+  }, [sessions, integration, prefs.captureEnabled])
+  useEffect(() => {
+    alive.current = true
     const unsubscribe = integration.subscribe(() => update((n) => n + 1))
     const resize = () => {
       const surface = document.querySelector<HTMLElement>('.nb-root') ?? document.querySelector<HTMLElement>('[data-chat-flow]')
@@ -57,7 +64,7 @@ export function CaptureOverlay({ sessions, integration }: any) {
       setPosition({ x: r ? r.left + r.width / 2 : innerWidth / 2, y: r ? Math.max(76, r.top + (surface?.classList.contains('nb-root') ? 120 : 12)) : 96 })
     }
     const observer = new ResizeObserver(resize); observer.observe(document.body); resize()
-    return () => { alive.current = false; document.removeEventListener('mouseup', selection); document.removeEventListener('keyup', selection); document.removeEventListener('pointerdown', down); document.removeEventListener('scroll', scroll, true); unsubscribe(); observer.disconnect() }
+    return () => { alive.current = false; unsubscribe(); observer.disconnect() }
   }, [sessions, integration])
   useEffect(() => {
     if (paused) { pauseStart.current = Date.now(); return }
@@ -76,6 +83,11 @@ export function CaptureOverlay({ sessions, integration }: any) {
       const state = await rpc(task.root, 'state'); canvasName ??= state.meta.activeCanvas
       const result = await rpc(task.root, action === 'direct' ? 'createNote' : 'distillNote', { canvasName, source: task.source, ...(action === 'direct' ? { title: titleFromText(task.text), body: task.text } : { text: task.text }) })
       if (alive.current) { setCapture(null); window.getSelection()?.removeAllRanges(); setNotices((ns) => ns.map((n) => n.id === id ? { ...n, canvasName, kind: 'ok', text: `${action === 'distill' ? '已提炼' : '已存入'}：${result.note.title}`, noteId: result.note.id, expires: Date.now() + (action === 'distill' ? 10000 : 5000) } : n)) }
+      if (alive.current && preferences.getSnapshot().value.captureAfter === 'open' && currentSessionOf(sessions).sessionId === task.sessionId) {
+        await integration.openCanvas(task.sessionId, task.root, canvasName, result.note.id).catch((e: Error) => {
+          setNotices((ns) => ns.map((n) => n.id === id ? { ...n, text: `便签已保存，自动定位失败：${e.message}` } : n))
+        })
+      }
     } catch (e: any) {
       if (alive.current) setNotices((ns) => ns.map((n) => n.id === id ? { ...n, canvasName, kind: 'error', text: e.message } : n))
     } finally { busy.current.delete(key) }

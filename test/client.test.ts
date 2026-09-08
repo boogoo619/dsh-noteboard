@@ -41,7 +41,14 @@ describe('camera / gestures', () => {
     expect(p2.x).toBeCloseTo(p1.x, 6)
     expect(p2.y).toBeCloseTo(p1.y, 6)
   })
-  it('snaps to grid', () => expect(snap(13)).toBe(16))
+  it('uses the visual grid and supports unsnapped movement', () => {
+    expect(snap(13)).toBe(24)
+    expect(snap(13.5, false)).toBe(13.5)
+    const delta = snap(31)
+    expect((75 + delta) - (11 + delta)).toBe(64)
+    expect(wheelAction({}, 'zoom')).toBe('zoom')
+    expect(wheelAction({ ctrlKey: true }, 'pan')).toBe('zoom')
+  })
   it('blank gesture: middle/space pans, default marquees', () => {
     expect(bgGesture({ button: 1 })).toBe('pan')
     expect(bgGesture({ button: 0, spaceHeld: true })).toBe('pan')
@@ -150,9 +157,10 @@ describe('distill v2 (settings-aware parsing)', () => {
     const r = parseDistillResult('{bad json} ```json\n{"title":"W","tags":[],"body":""}\n```')
     expect(r?.title).toBe('W')
   })
-  it('custom prompt replaces the built-in instruction', () => {
-    expect(distillPrompt('文本', '自定义指令')).toContain('自定义指令')
-    expect(distillPrompt('文本', '')).toContain('JSON')
-    expect(distillPrompt('文本', '  ')).toContain('JSON')
+  it('additional requirements preserve the built-in output contract', () => {
+    const prompt = distillPrompt('文本', { distillInstructions: '保留关键数字' })
+    expect(prompt).toContain('保留关键数字')
+    expect(prompt).toContain('JSON')
+    expect(distillPrompt('文本', { prompt: '旧指令' })).not.toContain('旧指令')
   })
 })

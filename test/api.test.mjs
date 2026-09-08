@@ -190,7 +190,7 @@ describe('note edits round-trip', () => {
 })
 
 describe('distill settings consumption (设置面板 → 提炼路径)', () => {
-  it('uses the configured provider/model/prompt from the settings handle', async () => {
+  it('uses the configured provider/model/instructions from the settings handle', async () => {
     const calls = []
     const fakeLlm = {
       listProviders: () => [{ id: 'p1' }, { id: 'p2' }],
@@ -203,12 +203,12 @@ describe('distill settings consumption (设置面板 → 提炼路径)', () => {
     const prevLlm = api.llm
     const prevHandle = api.settingsHandle
     api.llm = fakeLlm
-    api.settingsHandle = { get: () => ({ provider: 'p2', model: 'm2', prompt: '自定义提示词：只输出 JSON' }) }
+    api.settingsHandle = { get: () => ({ provider: 'p2', model: 'm2', distillInstructions: '保留数字' }) }
     try {
       const { note } = await api.distillNote(root, { text: '内容' })
       expect(note.title).toBe('配置生效')
       expect(calls[0]).toMatchObject({ provider: 'p2', model: 'm2' })
-      expect(calls[0].messages[0].content[0].text).toContain('自定义提示词：只输出 JSON')
+      expect(calls[0].messages.find((m) => m.role === 'user').content[0].text).toContain('保留数字')
     } finally {
       api.llm = prevLlm
       api.settingsHandle = prevHandle

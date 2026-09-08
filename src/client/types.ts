@@ -7,7 +7,7 @@ export const NOTE_COLORS = ['yellow', 'pink', 'blue', 'green', 'orange', 'purple
 
 export const CARD_W = 260
 export const CARD_H = 180
-export const GRID = 8 // 网格吸附步长
+export const GRID = 24 // Shared visual and interaction grid, in canvas units.
 export const Z_MIN = 0.2
 export const Z_MAX = 3
 export const WRITE_DEBOUNCE = 400
@@ -101,8 +101,8 @@ export function fitCamera(nodes: NbNode[], vw: number, vh: number, padding = FIT
 }
 
 /** Snap to the grid (拖动吸附, spec §3.1). */
-export function snap(v: number) {
-  return Math.round(v / GRID) * GRID
+export function snap(v: number, enabled = true) {
+  return enabled ? Math.round(v / GRID) * GRID : v
 }
 
 export function rectsOverlap(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) {
@@ -128,8 +128,8 @@ export function bgGesture({ button, spaceHeld }: { button: number; spaceHeld?: b
 }
 
 /** Should a wheel event zoom (Ctrl/⌘+滚轮 / pinch) or pan? */
-export function wheelAction(e: { ctrlKey?: boolean; metaKey?: boolean }) {
-  return e.ctrlKey || e.metaKey ? 'zoom' : 'pan'
+export function wheelAction(e: { ctrlKey?: boolean; metaKey?: boolean }, behavior = 'pan') {
+  return e.ctrlKey || e.metaKey || behavior === 'zoom' ? 'zoom' : 'pan'
 }
 
 /**

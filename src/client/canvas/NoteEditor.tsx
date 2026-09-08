@@ -3,14 +3,15 @@ import { Save, X } from 'lucide-react'
 import { rpc } from '../api'
 import { renderMarkdown } from '../markdown'
 import { Dialog, Colors, IconButton } from '../ui'
-export function NoteEditor({ note, cwd, canvasName, position, onDone, onClose }: any) {
+export function NoteEditor({ note, cwd, canvasName, position, defaultColor = 'yellow', onDone, onClose }: any) {
+  const [initialColor] = useState(note?.color ?? defaultColor)
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
-  const [color, setColor] = useState(note?.color ?? 'yellow')
+  const [color, setColor] = useState(initialColor)
   const [tags, setTags] = useState<string[]>(note?.tags ?? [])
   const [tag, setTag] = useState(''), [preview, setPreview] = useState(false)
   const [saving, setSaving] = useState(false), [error, setError] = useState('')
-  const dirty = title !== (note?.title ?? '') || body !== (note?.body ?? '') || color !== (note?.color ?? 'yellow') || JSON.stringify(tags) !== JSON.stringify(note?.tags ?? [])
+  const dirty = title !== (note?.title ?? '') || body !== (note?.body ?? '') || color !== initialColor || JSON.stringify(tags) !== JSON.stringify(note?.tags ?? [])
   const close = useCallback(() => { if (!saving && (!dirty || window.confirm('放弃未保存的修改？'))) onClose() }, [saving, dirty, onClose])
   async function save() {
     if (saving) return

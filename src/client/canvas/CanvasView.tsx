@@ -10,7 +10,8 @@ import { TextEditor, textHeight } from './TextEditor'
 import { nodeKind, nodeText } from '../../nodes.mjs'
 import { BoardTools, useDock } from '../composer'
 import { flushLayout, queueLayout, pendingLayout } from './layoutWrites'
-import { screenToBoard, zoomAt, marqueeHits, snap, fitCamera, RESET_CAM, CARD_W, CARD_H, type Camera, type NbState, type NbNode, type NbNote } from '../types'
+import { screenToBoard, zoomAt, marqueeHits, snap as snapValue, wheelAction, GRID, fitCamera, RESET_CAM, CARD_W, CARD_H, type Camera, type NbState, type NbNode, type NbNote } from '../types'
+import { usePreferences } from '../usePreferences'
 
 type Gesture = { kind: 'pan' | 'select' | 'cards'; sx: number; sy: number; cam: Camera; moved: boolean; nodes: NbNode[]; ids: Set<string>; original: Set<string>; additive?: boolean; clicked?: string; toggle?: boolean }
 const storedViews = new Map<string, { cam: Camera; selection: string[] }>()
@@ -28,6 +29,9 @@ function NoteBody({ body }: { body: string }) {
 }
 
 export function CanvasView(props: any) {
+  const preferences = usePreferences(props.preferences)
+  const prefs = preferences.value
+  const snap = (v: number) => snapValue(v, prefs.snapToGrid)
   const session = props.useSessions ? props.useSessions((s: any) => s.byId?.[props.sessionId]) : props.sessions?.list?.getSnapshot()?.byId?.[props.sessionId]
   const cwd = session?.cwd ?? props.cwd
   const dock = useDock(props.composer, props.sessionId)
@@ -49,6 +53,7 @@ export function CanvasView(props: any) {
   const activeName = data?.meta.activeCanvas ?? 'Main'
   const liveRoot = useRef(cwd); liveRoot.current = cwd
   const cacheKey = `${cwd}\n${activeName}`
+  const initialView = useRef(''), focusedView = useRef(''), interactedView = useRef('')
   const reload = useCallback(async () => {
     if (!cwd) return
     const result = await rpc(cwd, 'state') as NbState
@@ -60,6 +65,7 @@ export function CanvasView(props: any) {
   useEffect(() => { mounted.current = true; void reload().catch((e) => setError(e.message)); return () => { mounted.current = false } }, [reload])
   useEffect(() => {
     const saved = storedViews.get(cacheKey) ?? (() => { try { return JSON.parse(localStorage.getItem(`noteboard:view:${cacheKey}`) ?? 'null') } catch { return null } })()
+    initialView.current = ''; focusedView.current = ''; interactedView.current = ''
     setCam(saved?.cam ?? { ...RESET_CAM }); setSelection(new Set(saved?.selection ?? []))
     return () => {
       const current = { cam: state.current.cam, selection: [...state.current.selection] }
@@ -75,12 +81,13 @@ export function CanvasView(props: any) {
     const wheel = (e: WheelEvent) => {
       if (inputTarget(e.target)) return
       e.preventDefault()
+      interactedView.current = cacheKey
       const r = element.getBoundingClientRect()
-      setCam((c) => e.ctrlKey || e.metaKey ? zoomAt(c, Math.exp(-e.deltaY * .002), e.clientX - r.left, e.clientY - r.top) : { ...c, x: c.x - e.deltaX, y: c.y - e.deltaY })
+      setCam((c) => wheelAction(e, prefs.wheelBehavior) === 'zoom' ? zoomAt(c, Math.exp(-e.deltaY * .002), e.clientX - r.left, e.clientY - r.top) : { ...c, x: c.x - e.deltaX, y: c.y - e.deltaY })
     }
     element.addEventListener('wheel', wheel, { passive: false })
     return () => { resize.disconnect(); element.removeEventListener('wheel', wheel) }
-  }, [Boolean(data)])
+  }, [Boolean(data), prefs.wheelBehavior, cacheKey])
   useLayoutEffect(() => {
     const root = rootElement.current
     if (!root) return
@@ -112,6 +119,7 @@ export function CanvasView(props: any) {
   function focus(id: string) {
     const node = state.current.nodes.find((n) => n.id === id)
     if (!node) return
+    focusedView.current = cacheKey
     const a = safeArea(), z = Math.max(.7, Math.min(state.current.cam.z, 1.3))
     setCam({ z, x: a.x + a.width / 2 - (node.x + node.width / 2) * z, y: a.y + a.height / 2 - (node.y + node.height / 2) * z })
     setSelection(new Set([id])); setPulse(id)
@@ -124,6 +132,18 @@ export function CanvasView(props: any) {
   useEffect(() => {
     if (data && props.viewRequest?.view === 'noteboard' && props.viewRequest.focus) { focus(props.viewRequest.focus); props.completeViewRequest?.() }
   }, [data, props.viewRequest])
+  useEffect(() => {
+    if (!data || preferences.status === 'loading' || initialView.current === cacheKey || !board.current?.clientWidth) return
+    const frame = requestAnimationFrame(() => {
+      if (initialView.current === cacheKey) return
+      initialView.current = cacheKey
+      if (prefs.openingView === 'fit' && focusedView.current !== cacheKey && interactedView.current !== cacheKey && !props.viewRequest?.focus) {
+        if (state.current.nodes.length) fit()
+        else setCam({ ...RESET_CAM })
+      }
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [cacheKey, data, size, insets, preferences.status, prefs.openingView, props.viewRequest])
   function act(method: string, args: any = {}) {
     const canvasName = args.canvasName ?? activeName
     if (['saveAsNew', 'writeCanvas', 'rearrange', 'layout', 'addNotes', 'removeNotes'].includes(method)) args = { ...args, canvasName }
@@ -187,6 +207,7 @@ export function CanvasView(props: any) {
     if (e.button !== 0 && e.button !== 1) return
     if (!node && e.target !== e.currentTarget && !(e.target as HTMLElement).classList.contains('nb-world')) return
     e.preventDefault(); e.stopPropagation(); board.current?.focus()
+    interactedView.current = cacheKey
     if (placement && e.button === 0 && !space.current) {
       const r = board.current!.getBoundingClientRect(), point = screenToBoard(cam, e.clientX - r.left, e.clientY - r.top)
       editText({ id: '', type: 'text', text: '', x: snap(point.x), y: snap(point.y), width: 260, height: 30, noteboard: { kind: 'text', fontSize: 20 } }); return
@@ -258,7 +279,7 @@ export function CanvasView(props: any) {
       if (e.target !== e.currentTarget && !(e.target as HTMLElement).classList.contains('nb-world')) return
       const r = board.current!.getBoundingClientRect(); newNote(screenToBoard(cam, e.clientX - r.left, e.clientY - r.top))
     }}>
-      <div className="nb-grid" style={{ backgroundSize: `${24 * cam.z}px ${24 * cam.z}px`, backgroundPosition: `${cam.x}px ${cam.y}px`, opacity: Math.min(1, cam.z * 1.6) }}/>
+      {prefs.showGrid && <div className="nb-grid" style={{ backgroundSize: `${GRID * cam.z}px ${GRID * cam.z}px`, backgroundPosition: `${cam.x}px ${cam.y}px`, opacity: Math.min(1, cam.z * 1.6) }}/>}
       <div className="nb-world" style={{ transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.z})` }}>
         {nodes.map((node) => {
           if (['text', 'heading'].includes(nodeKind(node))) return textEditing?.id === node.id ? null : <div key={node.id} data-text-id={node.id} className={`nb-text color-${node.noteboard?.color ?? 'gray'}${selection.has(node.id) ? ' nb-selected' : ''}`} style={{ left: node.x, top: node.y, width: node.width, minHeight: node.height, fontSize: node.noteboard?.fontSize ?? (nodeKind(node) === 'heading' ? 14 : 20) }} onPointerDown={(e) => begin(e, node)} onDoubleClick={(e) => { e.stopPropagation(); editText(node) }}><div className="nb-text-content">{nodeText(node)}</div></div>
@@ -307,7 +328,9 @@ export function CanvasView(props: any) {
         return <div className="nb-result" key={note.id}><span className={`nb-color-indicator color-${note.color}`}/><button onClick={() => onBoard ? (setDrawer(''), focus(note.id)) : setEditing({ note })}><strong>{note.title}</strong><small>{note.body.slice(0, 90)}</small><small>{onBoard ? '在此画布' : '未在此画布'}</small></button><IconButton icon={onBoard ? ArrowUpRight : Plus} label={onBoard ? '定位便签' : '加入画布'} onClick={() => onBoard ? (setDrawer(''), focus(note.id)) : action('addNotes', { ids: [note.id], canvasName: activeName, center: center() })}/></div>
       })}</div></>}
     </aside>}
-    {editing && <NoteEditor note={editing.note} position={editing.position} cwd={cwd} canvasName={activeName} onClose={() => setEditing(null)} onDone={(r: any) => { setEditing(null); setStatus('已保存'); void reload().then(() => { if (r.note) setSelection(new Set([r.note.id])) }) }}/>}
+    {editing && <NoteEditor note={editing.note} position={editing.position} defaultColor={prefs.defaultColor} cwd={cwd} canvasName={activeName}
+      onClose={() => setEditing(null)} onDone={(r: any) => { setEditing(null); setStatus('已保存'); void reload().then(() => { if (r.note) setSelection(new Set([r.note.id])) }) }}/>
+    }
     {saveAs && <Dialog title="另存为新画布" onClose={() => setSaveAs(false)}><form className="nb-form" onSubmit={(e) => { e.preventDefault(); void act('saveAsNew', { name: name.trim() || undefined }).then(() => setSaveAs(false)).catch(() => {}) }}><input aria-label="新画布名" placeholder={`${activeName}-副本`} value={name} onChange={(e) => setName(e.target.value)}/>{error && <p className="nb-error">{error}</p>}<button className="nb-button nb-primary">保存</button></form></Dialog>}
     {source && <Dialog title="原文与依据" onClose={() => setSource(null)}><div className="nb-source"><p className="nb-muted">{source.source?.label || '画布内新建'}</p>{source.source?.text && <blockquote>{source.source.text}</blockquote>}{source.source?.sessionId && <button className="nb-button nb-primary" onClick={() => {
       if (!props.integration) { setError('宿主来源导航不可用'); return }

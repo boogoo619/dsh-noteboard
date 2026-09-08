@@ -4,7 +4,7 @@
  * Registers three slots (all additive; all lifecycle on the plugin Fiber):
  * - `conversation.view`  → the 画布 tab (workspace-wide data, session-scoped mount)
  * - `shell.overlay`      → text-selection capture buttons + result toast
- * - `settings.plugin.item` → Plugins-tab card for the distill provider/model/prompt
+ * - `settings.plugin.item` → Collapsible plugin preferences
  *
  * The settings card registers through a scoped `ctx.inject(['settingsScope'])`
  * so it appears the moment the settings transport mounts (and disappears with
@@ -20,6 +20,7 @@ import { CANVAS_CSS } from './styles'
 import { createIntegration } from './integration'
 import { registerToolResults } from './ToolResult'
 import { createComposer } from './composer'
+import { createPreferences } from './preferences'
 
 const NS = 'noteboard'
 
@@ -32,6 +33,8 @@ export default {
     const conversation = ctx.get('conversation')
     const integration = createIntegration(ctx)
     const composer = createComposer(ctx, integration)
+    const preferences = createPreferences()
+    ctx.effect(() => () => preferences.dispose())
     registerToolResults(ctx)
     ctx.effect(() => () => integration.dispose())
 
@@ -51,13 +54,13 @@ export default {
       name: 'conversation.view',
       id: NS,
       label: '画布',
-    }, (props: any) => createElement(CanvasView, { ...props, sessions, integration, composer }))))
+    }, (props: any) => createElement(CanvasView, { ...props, sessions, integration, composer, preferences }))))
 
     ctx.effect(() => slots.inject('shell.overlay', () => slots.register({
       name: 'shell.overlay',
       id: `${NS}-capture`,
       order: 500,
-    }, (props: any) => createElement(CaptureOverlay, { ...props, sessions, conversation, integration }))))
+    }, (props: any) => createElement(CaptureOverlay, { ...props, sessions, conversation, integration, preferences }))))
 
     // Plugins-tab settings card, keyed by the Host-served 'noteboard'
     // namespace. The slot changed shape between dsh releases: register BOTH
@@ -67,12 +70,13 @@ export default {
     ctx.inject(['settingsScope'], (scopeCtx: any) => {
       const scope = scopeCtx?.settingsScope
       if (!scope || typeof scope.bind !== 'function') return
+      scopeCtx.effect(() => preferences.attach(scope.bind({ namespace: NS })))
       return scopeCtx.effect(() => scopeCtx.slots.inject('settings.plugin.item', () => scopeCtx.slots.register({
         name: 'settings.plugin.item',
         key: NS,
         id: NS,
         order: 500,
-      }, () => createElement(NoteboardSettingsCard, { settingsScope: scope }))))
+      }, () => createElement(NoteboardSettingsCard, { preferences }))))
     })
   },
 }

@@ -1,5 +1,5 @@
 /**
- * Durable settings for the noteboard plugin (spec §3.4 用户可配置的提炼):
+ * Durable capture, canvas, distill and history preferences:
  * one namespace served through the official settings system, edited by the
  * Plugins-tab card (`settings.plugin.item`, keyed by this namespace).
  *
@@ -11,29 +11,15 @@
  */
 
 import z from '@deepseek-ai/schemastery'
+import { DEFAULT_PREFERENCES, PREFERENCE_CHOICES } from './preferences.mjs'
 
 export const NAMESPACE = 'noteboard'
 
-/** Built-in distill prompt — shown as the card's placeholder; '' means "use this". */
-export const BUILTIN_PROMPT = [
-  '把 <text> 标签里的文字提炼成一张便签。只输出一个 JSON 对象，不要输出任何其他文字：',
-  '{"title": "不超过12字的标题", "tags": ["1-3个中文标签"], "body": "精炼后的 Markdown 正文，保留关键事实与数字，不超过200字"}',
-].join('\n')
-
-/** Assemble the distill user message: instruction + delimited selection. */
-export function distillMessage(selectedText, customPrompt = '') {
-  const instruction = (customPrompt ?? '').trim() || BUILTIN_PROMPT
-  return `${instruction}\n<text>\n${String(selectedText ?? '').trim()}\n</text>`
-}
-
-export const NoteboardSettingsSchema = z.object({
-  /** 提炼用的 provider 路由键；'' = 自动选择第一个可用 provider。 */
-  provider: z.string().default(''),
-  /** 提炼用的模型 id；'' = 该 provider 下的第一个模型。 */
-  model: z.string().default(''),
-  /** 提炼提示词；'' = 使用内置提示词。 */
-  prompt: z.string().default(''),
-})
+export const NoteboardSettingsSchema = z.object(Object.fromEntries(
+  Object.entries(DEFAULT_PREFERENCES).map(([key, value]) => [key,
+    (PREFERENCE_CHOICES[key] ? z.union(PREFERENCE_CHOICES[key]) : typeof value === 'boolean' ? z.boolean() : z.string()).default(value),
+  ]),
+))
 
 /**
  * Register the namespace whenever a settings provider is mounted and return a
@@ -50,6 +36,7 @@ export function registerSettings(ctx) {
       if (!settings || typeof settings.register !== 'function') return
       try {
         scope = settings.register(NAMESPACE, NoteboardSettingsSchema)
+        sctx.effect(() => () => { scope = null })
       } catch (error) {
         scope = null
         console.warn('[dsh-noteboard] settings namespace registration failed:', error)

@@ -50,7 +50,7 @@ export async function history(root) {
   }
   return entries.sort((a, b) => b.created.localeCompare(a.created))
 }
-export async function transaction(root, label, run) {
+export async function transaction(root, label, run, { historyLimit = 50 } = {}) {
   const id = randomUUID()
   const tx = { id, root: resolve(root), journal: join(resolve(root), '.noteboard/history', `${id}.json`),
     label, created: new Date().toISOString(), status: 'pending', files: [] }
@@ -58,7 +58,8 @@ export async function transaction(root, label, run) {
     const value = await transactions.run(tx, run)
     tx.status = 'complete'
     if (tx.files.length) await replace(tx.journal, JSON.stringify(tx, null, 2))
-    for (const old of (await history(root)).slice(50)) await rm(join(root, '.noteboard/history', `${old.id}.json`), { force: true })
+    const limit = [50, 100, 200].includes(historyLimit) ? historyLimit : 50
+    for (const old of (await history(root)).filter((entry) => entry.status !== 'pending').slice(limit)) await rm(join(root, '.noteboard/history', `${old.id}.json`), { force: true })
     return { ...value, operationId: tx.files.length ? id : undefined, changedFiles: tx.files.length }
   } catch (e) {
     tx.status = 'failed'; tx.error = String(e.message)

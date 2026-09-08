@@ -1,7 +1,8 @@
 import * as store from './store.mjs'
 import { serialized, transaction, history, restoreOperation, revision } from './persistence.mjs'
 import { rearrangeNodes } from './layout.mjs'
-import { distill } from './distill.mjs'
+import { distill, distillWithRoute, listLlmOptions, resolveModel } from './distill.mjs'
+import { resolvePreferences } from './preferences.mjs'
 import { randomUUID } from 'node:crypto'
 import { nodeKind, nodeText, headingTag, normalizeNode, detachHeading, suppressHeading, applyManualNodes } from './nodes.mjs'
 
@@ -12,6 +13,7 @@ const labels = { updateNotes: '修改便签', createNotes: '创建便签', creat
 
 export function buildApi() {
   const api = { llm: null, settingsHandle: null }
+  const preferences = () => resolvePreferences(api.settingsHandle?.get())
   async function state(root) {
     await store.scaffold(root)
     const meta = await store.readMeta(root), canvases = await store.listCanvases(root)
@@ -160,7 +162,7 @@ export function buildApi() {
       if (!Array.isArray(drafts) || !drafts.length || drafts.length > 200) throw new Error('每次创建 1–200 张便签')
       const created = []
       for (const draft of drafts) {
-        const note = await store.createNote(root, { ...draft, title: String(draft.title || '未命名').slice(0, 120), body: String(draft.body ?? ''), tags: tags(draft.tags ?? []) })
+        const note = await store.createNote(root, { ...draft, color: draft.color ?? preferences().defaultColor, title: String(draft.title || '未命名').slice(0, 120), body: String(draft.body ?? ''), tags: tags(draft.tags ?? []) })
         const pos = Number.isFinite(draft.x) && Number.isFinite(draft.y) ? draft : store.findFreeSpot(canvas.nodes, args.center?.x ?? 0, args.center?.y ?? 0)
         canvas.nodes.push(store.noteNode(note, pos.x, pos.y)); created.push(note)
       }
@@ -255,19 +257,16 @@ export function buildApi() {
     },
     async clearBackup(root, args) { await store.clearBackup(root, (await target(root, args)).name); return { ok: true } },
     async llmOptions() {
-      if (!api.llm) return []
-      return Promise.all((api.llm.listProviders() ?? []).map(async (p) => {
-        const id = p.id ?? p.provider ?? p
-        let models = []; try { models = await api.llm.listModels(id) } catch {}
-        return { id, name: p.name ?? id, models: models.map((m) => ({ id: m.id ?? m.model ?? m, name: m.name ?? m.id ?? m })) }
-      }))
+      const providers = await listLlmOptions(api.llm)
+      try { return { providers, resolved: resolveModel(providers, preferences()) } }
+      catch (e) { return { providers, resolved: null, error: e.message } }
     },
   }
   const reads = new Set(['state', 'query', 'history', 'llmOptions'])
   for (const [method, fn] of Object.entries(methods)) api[method] = (root, args = {}) => serialized(root, async () => {
     if (method !== 'llmOptions') await store.scaffold(root)
     if (reads.has(method) || method === 'switchCanvas') return fn(root, args)
-    return transaction(root, labels[method] ?? method, () => fn(root, args))
+    return transaction(root, labels[method] ?? method, () => fn(root, args), { historyLimit: preferences().historyLimit })
   })
   api.createNote = async (root, args = {}) => { const result = await api.createNotes(root, { ...args, notes: [args] }); return { ...result, path: `.noteboard/notes/${result.note.file}` } }
   api.updateNote = (root, args) => api.updateNotes(root, args)
@@ -282,6 +281,10 @@ export function buildApi() {
     if (!api.llm) throw new Error('llm 服务不可用，无法提炼')
     const result = await distill(api.llm, String(args.text ?? ''), api.settingsHandle?.get() ?? {})
     return api.createNote(root, { ...result, canvasName, source: args.source, center: args.center })
+  }
+  api.distillPreview = async (_root, args = {}) => {
+    const { note, provider, model } = await distillWithRoute(api.llm, args.text, preferences())
+    return { ...note, provider, model }
   }
   return api
 }
