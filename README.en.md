@@ -26,16 +26,22 @@
 
 ![Capturing a note from a conversation](screenshots/capture-from-chat.png)
 
+**Jumping from a note back to its source**
+
+![Jumping from a note back to its source](screenshots/backlink-jump.png)
+
 <!-- Put screenshots in the screenshots/ directory:
      - canvas-overview.png — canvas overview: notes in several colors + category headings + the top toolbar
      - cite-notes.png — input state: bottom composer expanded with 2–3 note citation bubbles above it
-     - capture-from-chat.png — a text selection in the conversation view with the "save to canvas / AI distill" popover -->
+     - capture-from-chat.png — a text selection in the conversation view with the "save to canvas / AI distill" popover
+     - backlink-jump.png — the conversation view after clicking a note's "source / open conversation", with the origin text highlighted -->
 
 ## Features
 
 - **Infinite canvas** — pan, zoom, marquee group-move, grid snapping, plus free text and tag-clustered headings; the same notes can live on multiple canvas layouts, switchable anytime
 - **Markdown notes** — each note is a `.md` file with frontmatter; live-preview editor, seven colors, light and dark themes
-- **Capture from conversations** — select text to "save to canvas" verbatim or "AI distill" it into a note; notes carry a source backlink to the origin
+- **Capture from conversations** — select text to "save to canvas" verbatim or "AI distill" it into a note
+- **Source backlinks** — every captured note remembers which session and passage it came from; "open conversation" jumps straight to the highlighted origin, and one click returns to the canvas
 - **Send back to the AI** — notes join the composer as citation bubbles and go out as structured citations; sending is blocked beyond 32,000 cumulative characters
 - **Organizing** — tag-pill focus filter, auto-rearrange by tag (backed up, restorable), search across titles / bodies / tags, off-board note library
 - **AI tools** — 10 note tools and 4 bundled workflows let the model query, modify, organize, and synthesize notes (tables below)
