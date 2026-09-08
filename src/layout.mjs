@@ -20,6 +20,23 @@ export const CLUSTER_GAP = 96 // aisle between clusters
 
 const UNCATEGORIZED = '未分类'
 
+/** Preserve the supplied order and node metadata, keeping other canvas objects in place. */
+export function orderedNodes(nodes, retained, columns = Math.ceil(Math.sqrt(nodes.length))) {
+  if (!Number.isInteger(columns) || columns < 1 || columns > 200) throw new Error('每行数量必须是 1 到 200 的整数')
+  if (!nodes.length) throw new Error('请指定便签 ID')
+  const cols = Math.min(columns, nodes.length)
+  const width = Math.max(...nodes.map((n) => n.width))
+  const height = Math.max(...nodes.map((n) => n.height))
+  let left = Math.min(...nodes.map((n) => n.x))
+  const top = Math.min(...nodes.map((n) => n.y))
+  const right = left + cols * (width + GRID_GAP) - GRID_GAP
+  const bottom = top + Math.ceil(nodes.length / cols) * (height + GRID_GAP) - GRID_GAP
+  if (retained.some((n) => left < n.x + n.width + GRID_GAP && right + GRID_GAP > n.x && top < n.y + n.height + GRID_GAP && bottom + GRID_GAP > n.y)) {
+    left = Math.max(...retained.map((n) => n.x + n.width)) + CLUSTER_GAP
+  }
+  return nodes.map((n, i) => ({ ...n, x: left + (i % cols) * (width + GRID_GAP), y: top + Math.floor(i / cols) * (height + GRID_GAP) }))
+}
+
 /** One cluster's grid: returns { width, height, cards: [{note, x, y}] } relative to origin. */
 function buildCluster(tag, notes) {
   const cols = Math.max(1, Math.ceil(Math.sqrt(notes.length)))

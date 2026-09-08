@@ -20,7 +20,7 @@ const definitions = [
   ['noteboard_update', 'updateNotes', '修改指定便签，版本取自最近一次读取。内容修改影响所有画布。仅修改用户要求的字段。', { ids, versions, patch }, ['ids', 'versions', 'patch']],
   ['noteboard_add', 'addNotes', '把已有便签放入指定画布，文件不复制。', { ids, canvasName: string, canvasVersion: string }, ['ids', 'canvasName', 'canvasVersion']],
   ['noteboard_remove', 'removeNotes', '仅从指定画布移除便签，保留文件和其他画布引用。', { ids, canvasName: string, canvasVersion: string }, ['ids', 'canvasName', 'canvasVersion']],
-  ['noteboard_layout', 'layout', '整理明确指定的便签布局；先读取版本。范围不明确时先询问用户。', { ids, canvasName: string, canvasVersion: string, action: { type: 'string', enum: ['rearrange', 'left', 'right', 'top', 'bottom', 'centerX', 'centerY', 'distributeX', 'distributeY'] } }, ['ids', 'canvasName', 'canvasVersion', 'action']],
+  ['noteboard_layout', 'layout', '整理指定画布上的便签；先读取最新 canvasVersion（改色也会改变画布版本）。ordered 严格按 ids 顺序从左到右、逐行向下排列，保留标签、颜色和尺寸；rearrange 按首标签聚类，不保证 ids 顺序。范围不明确时先确定范围。', { ids: { ...ids, description: '目标便签 ID；ordered 时数组顺序就是排列顺序，必须无重复且全部位于指定画布。' }, canvasName: string, canvasVersion: string, action: { type: 'string', enum: ['rearrange', 'ordered', 'left', 'right', 'top', 'bottom', 'centerX', 'centerY', 'distributeX', 'distributeY'] }, columns: { type: 'integer', description: '仅用于 ordered：每行 1-200 张；1 为纵列，等于便签数为横行，省略时采用接近正方形的网格。' } }, ['ids', 'canvasName', 'canvasVersion', 'action']],
   ['noteboard_save_as', 'saveAsNew', '另存画布布局，不复制便签。', { canvasName: string, name: string }, ['canvasName', 'name']],
   ['noteboard_history', 'history', '列出操作记录；传 id 查看文件修改前后全文和完成状态。', { id: string }, []],
   ['noteboard_restore', 'restoreOperation', '恢复指定操作，检测后续修改冲突并拒绝覆盖。', { id: string }, ['id']],

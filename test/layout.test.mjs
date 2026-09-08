@@ -1,8 +1,36 @@
 import { describe, it, expect } from 'vitest'
-import { rearrangeNodes } from '../src/layout.mjs'
+import { rearrangeNodes, orderedNodes } from '../src/layout.mjs'
 
 const note = (id, tags, color = 'yellow') => ({
   id, tags, color, path: `.noteboard/notes/x-${id}.md`,
+})
+
+describe('orderedNodes', () => {
+  const nodes = [
+    { id: 'later', x: 500, y: 300, width: 120, height: 90, color: '5', custom: { keep: true } },
+    { id: 'earlier', x: 100, y: 100, width: 300, height: 160, color: '4' },
+    { id: 'latest', x: 800, y: 500, width: 200, height: 100 },
+  ]
+  it('preserves explicit order and variable dimensions in a row-major grid', () => {
+    const input = structuredClone(nodes)
+    const placed = orderedNodes(nodes, [], 2)
+    expect(placed.map((n) => n.id)).toEqual(nodes.map((n) => n.id))
+    expect(placed.map(({ x, y }) => [x, y])).toEqual([[100, 100], [424, 100], [100, 284]])
+    expect(placed.map(({ x, y, ...rest }) => rest)).toEqual(nodes.map(({ x, y, ...rest }) => rest))
+    expect(nodes).toEqual(input)
+  })
+  it('supports a vertical timeline and shifts the whole grid around retained objects', () => {
+    const retained = [{ id: 'text', x: 90, y: 100, width: 600, height: 500 }]
+    const placed = orderedNodes(nodes, retained, 1)
+    expect(placed.every((n) => n.x > retained[0].x + retained[0].width)).toBe(true)
+    expect(new Set(placed.map((n) => n.x)).size).toBe(1)
+    expect(placed.map((n) => n.y)).toEqual([100, 284, 468])
+    expect(retained[0].x).toBe(90)
+  })
+  it('handles a single note and rejects invalid column counts', () => {
+    expect(orderedNodes([nodes[0]], [])).toEqual([nodes[0]])
+    for (const columns of [0, -1, 1.5, 201, NaN, '2', null]) expect(() => orderedNodes(nodes, [], columns)).toThrow('整数')
+  })
 })
 
 describe('rearrangeNodes', () => {

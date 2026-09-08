@@ -1,6 +1,6 @@
 import * as store from './store.mjs'
 import { serialized, transaction, history, restoreOperation, revision } from './persistence.mjs'
-import { rearrangeNodes } from './layout.mjs'
+import { rearrangeNodes, orderedNodes } from './layout.mjs'
 import { distill, distillWithRoute, listLlmOptions, resolveModel } from './distill.mjs'
 import { resolvePreferences } from './preferences.mjs'
 import { randomUUID } from 'node:crypto'
@@ -207,9 +207,18 @@ export function buildApi() {
       await store.writeCanvas(root, name, canvas); return { ok: true, succeeded: notes.map((n) => n.id), failed: [] }
     },
     async layout(root, args) {
-      if (!['rearrange', 'left', 'right', 'top', 'bottom', 'centerX', 'centerY', 'distributeX', 'distributeY'].includes(args.action)) throw new Error('未知布局操作')
+      if (!['rearrange', 'ordered', 'left', 'right', 'top', 'bottom', 'centerX', 'centerY', 'distributeX', 'distributeY'].includes(args.action)) throw new Error('未知布局操作')
       const { name, canvas } = await target(root, args)
-      if (args.action === 'rearrange') {
+      if (args.action === 'ordered') {
+        const ids = args.ids
+        if (!Array.isArray(ids) || !ids.length || ids.some((id) => typeof id !== 'string') || new Set(ids).size !== ids.length) throw new Error('请指定不重复的便签 ID')
+        const nodes = ids.map((id) => canvas.nodes.find((n) => n.id === id && nodeKind(n) === 'note'))
+        if (nodes.some((n) => !n)) throw new Error('便签不在指定画布中')
+        const retained = canvas.nodes.filter((n) => !ids.includes(n.id))
+        const placed = new Map(orderedNodes(nodes, retained, args.columns).map((n) => [n.id, n]))
+        canvas.nodes = canvas.nodes.map((n) => placed.get(n.id) ?? n)
+        await store.clearBackup(root, name)
+      } else if (args.action === 'rearrange') {
         const all = await store.listNotes(root), ids = args.ids ?? canvas.nodes.filter((n) => nodeKind(n) === 'note').map((n) => n.id)
         const notes = all.filter((n) => ids.includes(n.id) && canvas.nodes.some((x) => x.id === n.id))
         await store.backupCanvas(root, name)
