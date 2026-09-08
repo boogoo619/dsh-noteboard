@@ -44,36 +44,54 @@
 - **Source backlinks** — every captured note remembers which session and passage it came from; "open conversation" jumps straight to the highlighted origin, and one click returns to the canvas
 - **Send back to the AI** — notes join the composer as citation bubbles and go out as structured citations; sending is blocked beyond 32,000 cumulative characters
 - **Organizing** — tag-pill focus filter, auto-rearrange by tag (backed up, restorable), search across titles / bodies / tags, off-board note library
-- **AI tools** — 10 note tools and 4 bundled workflows let the model query, modify, organize, and synthesize notes (tables below)
+- **AI tools** — 12 tools and 5 bundled workflows support reading conversation ranges, extracting, querying, modifying, organizing, and synthesizing notes (tables below)
 - **History & restore** — every write shows a before/after diff and is restorable; conflicting restores are refused
 
 ## AI Tools & Workflows 🤖
 
-10 model tools registered with the plugin:
+12 model tools registered with the plugin:
 
 | Tool | Description |
 | --- | --- |
 | `canvas_add_note` | Create a note and place it on a canvas; optionally record `derivedFrom` provenance |
 | `noteboard_query` | Search workspace notes, or read full content, versions, and sources by ids |
-| `noteboard_create` | Batch-create notes (up to 200 per call) |
-| `noteboard_update` | Modify notes (must carry read-time versions); content edits affect every canvas |
+| `noteboard_create` | Batch-create up to 200 notes with shared or per-note sources and optional exact deduplication |
+| `noteboard_sessions` | Find source sessions in the current workspace by title or ID, with paginated metadata |
+| `noteboard_read_session` | Read current or specified conversation text by sequence, time, and role, including long-message continuation |
+| `noteboard_update` | Modify notes with read-time versions; batch by color for classification. Content and color edits affect every canvas |
 | `noteboard_add` | Place existing notes onto a canvas without copying files |
 | `noteboard_remove` | Remove notes from a canvas only; files are kept |
-| `noteboard_layout` | Rearrange, align, or distribute notes (must carry the canvas version) |
+| `noteboard_layout` | Group by tag, arrange in explicit ID order, align, or distribute notes (must carry the canvas version) |
 | `noteboard_save_as` | Save the canvas layout under a new name |
 | `noteboard_history` | List operations; inspect before/after file content |
 | `noteboard_restore` | Restore an operation, refusing to overwrite later changes |
 
-Plus 4 bundled workflows (skills):
+Plus 5 bundled workflows (skills):
 
 | Workflow | Description |
 | --- | --- |
-| `noteboard-organize` | Group notes by theme, tag them, tidy the layout |
+| `noteboard-extract` | Filter conversations, selected ranges, files, or referenced material into notes with source metadata |
+| `noteboard-organize` | Group and tag notes, color by content, or arrange by version, time, or priority |
 | `noteboard-compare` | Compare plans captured in notes; weigh trade-offs and spot disagreements |
 | `noteboard-actions` | Break ideas in notes down into action items or implementation steps |
 | `noteboard-synthesize` | Merge duplicate notes, deduplicate, or synthesize conclusions |
 
 Regular operations use the session model; the "AI distill" model is configured separately in plugin settings.
+
+For example: "Color these release notes by the kind of change, then arrange them in ascending version order, four per row." The model reads the notes, chooses the color mapping and version order, updates notes in color groups, reads the latest canvas version, then calls `noteboard_layout` with `action: "ordered"`, sorted `ids`, and `columns: 4`. The tool preserves that order from left to right, row by row, keeps tags and dimensions, and avoids unselected canvas objects. Use `columns: 1` for a vertical timeline; omit it for a roughly square grid. The model determines version order; the layout tool does not parse versions. `rearrange` continues to group by the first tag. Layout operations can be restored through history.
+
+### Extract Notes by Criteria
+
+For example: "Save confirmed product decisions from this conversation as notes, excluding tentative proposals," or "Extract unresolved questions from this afternoon in the specified conversation, one per note; show a preview first." `noteboard-extract` follows the requested scope and format. Preview requests produce drafts only; save requests check existing notes before creating new ones.
+
+- `noteboard_sessions` searches session titles and IDs within the current workspace. A source in another workspace requires a user-specified session ID; created notes still belong to the executing session's workspace.
+- `noteboard_read_session` defaults to the current session. `fromSeq/toSeq` are inclusive event sequences, not conversation turn numbers; `fromTime/toTime` are inclusive Unix milliseconds. `roles` selects `user`, `assistant`, or both.
+- The tool reads original conversation text, including pre-compaction messages. It excludes reasoning, tool output, and injected context, and does not parse images or attachments. `nonTextBlocks` indicates non-text material in the selected range.
+- Pages default to 40 messages and 12,000 characters. Pass the entire `next` object into the next call until `complete: true`. Continuations retain the initial capture boundary; later messages require a new read. Long messages expose `start/end` offsets so their text can be joined by `seq`.
+- The existing `source` field stores conversation `sessionId/seq/label/text`, file `path/startLine/endLine/label/text`, or web `url/label/text`. Batch sources provide defaults that individual notes may override. Cite multiple sources in the body and record the primary source in `source`. Existing conversation navigation remains available; file and web references are stored as metadata.
+- Optional `deduplicate: true` skips notes with matching titles and bodies, ignoring surrounding whitespace, within the target canvas and the current batch. `skipped` reports input indices and existing IDs without modifying those notes. It defaults to false. The workflow handles semantic duplicates by reading existing content and checks persisted results before retrying.
+
+Historical discovery and reads use the host's `sessionQuery` service; the current conversation can be read directly from the executing Session. Missing services produce explicit errors. File and web content use existing host read tools.
 
 ## Install 📦
 
@@ -160,6 +178,8 @@ npm test            # vitest: unit / API tests
 npx tsc --noEmit    # type check
 npm run build       # tsdown build: host service + client bundle → lib/
 ```
+
+With Harness installed, run `node test/host-extraction.mjs /path/to/installed/dsh` to check tool registration, conversation reads, source persistence, duplicate retries, and restore against the host's actual schema validator and Session class. The script uses a temporary workspace and removes its test notes afterward.
 
 `test/browser-*.mjs` are browser end-to-end scripts that need real Harness instances running locally (ports 3081–3083 by default), with auth state and logs under `/tmp`; screenshots go to `artifacts/` (gitignored). Client changes take effect on refresh after a build; host-side changes need an instance restart.
 
