@@ -183,6 +183,15 @@ npm run build       # tsdown 构建：Host 服务 + 客户端 bundle → lib/
 
 `test/browser-*.mjs` 为浏览器端到端脚本，需要本地运行的真实 Harness 实例（默认 3081–3083 端口），认证状态与日志位于 `/tmp`，截图输出至 `artifacts/`（已 gitignore）。客户端代码修改构建后刷新页面即可，Host 侧修改需重启实例。
 
+## 跨平台路径 🌐
+
+工作区 root 支持 macOS / Linux 的 `/path/to/ws` 与 Windows 的 `C:\path\to\ws`、`C:/path/to/ws`、UNC `\\server\share\ws`。实现约定：
+
+- 路径形式判断（是否绝对路径、分隔符、大小写）只允许发生在 `src/workspace-root.mjs`，全仓其余模块拿到的都是规范化后的 root（`test/path-hygiene.test.mjs` 用静态扫描强制这一点）；
+- 规范形 = `resolve` + Windows 盘符小写，目录存在时再经 `realpath` 消除符号链接与盘符大小写变体（UNC 服务器名大小写不处理），保证同一工作区共享同一把写队列与同一份操作记录；
+- 操作日志（`.noteboard/history/`）中的文件键在所有平台统一为正斜杠的工作区相对路径；
+- CI 在 macOS / Ubuntu / Windows 三个平台运行同一套测试（`.github/workflows/ci.yml`）。
+
 ## 边界与已知限制 ⚠️
 
 - 不提供连接线（edges）与成组（groups）的 UI，文件格式已为其留位

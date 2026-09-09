@@ -183,6 +183,15 @@ With Harness installed, run `node test/host-extraction.mjs /path/to/installed/ds
 
 `test/browser-*.mjs` are browser end-to-end scripts that need real Harness instances running locally (ports 3081–3083 by default), with auth state and logs under `/tmp`; screenshots go to `artifacts/` (gitignored). Client changes take effect on refresh after a build; host-side changes need an instance restart.
 
+## Cross-Platform Paths 🌐
+
+Workspace roots may be macOS/Linux `/path/to/ws`, Windows `C:\path\to\ws`, `C:/path/to/ws`, or UNC `\\server\share\ws`. The conventions:
+
+- Path-form reasoning (absolute-ness, separators, casing) may only happen in `src/workspace-root.mjs`; every other module receives an already-canonical root (`test/path-hygiene.test.mjs` enforces this with a static scan);
+- Canonical form = `resolve` + lower-cased Windows drive letter, mapped through `realpath` when the directory exists to remove symlinks and drive-letter case variants (UNC server-name casing is left as-is), so one workspace keeps exactly one write queue and one operation journal;
+- Operation-journal file keys (`.noteboard/history/`) are forward-slashed workspace-relative paths on every platform;
+- CI runs the same suite on macOS / Ubuntu / Windows (`.github/workflows/ci.yml`).
+
 ## Boundaries & Known Limitations ⚠️
 
 - No UI for edges or groups yet; the file format already reserves them
