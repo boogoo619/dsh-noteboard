@@ -97,7 +97,22 @@ Historical discovery and reads use the host's `sessionQuery` service; the curren
 
 Requires the `dsh` CLI (`>= 0.1.2-rc.1`) and Node `>= 22.19.0`.
 
-**From GitHub (current)**
+**From npm (recommended)**
+
+```sh
+dsh plugin --profile web add dsh-noteboard
+dsh web
+```
+
+The npm package ships **prebuilt artifacts** — no build scripts run on your machine and no pnpm build authorization is needed.
+
+> If `add` doesn't pick up the latest version: that's pnpm's `minimumReleaseAge` safety mechanism — for **24 hours** by default, freshly published versions aren't resolved as `latest` and fall back to the previous stable one. To get the newest release immediately, pin the version:
+>
+> ```sh
+> dsh plugin --profile web add dsh-noteboard@<version>
+> ```
+
+**From GitHub source**
 
 ```sh
 dsh plugin --profile web add github:boogoo619/dsh-noteboard
@@ -112,19 +127,6 @@ dsh web
 > ```
 >
 > Then run `add` again. **This authorization lets this package's code execute on your machine at install time** — only grant it to trusted sources and pin a commit (`github:boogoo619/dsh-noteboard#<sha>`).
-
-**From npm (once published)**
-
-```sh
-dsh plugin --profile web add dsh-noteboard
-dsh web
-```
-
-> If `add` doesn't pick up the latest version: that's pnpm's `minimumReleaseAge` safety mechanism — for **24 hours** by default, freshly published versions aren't resolved as `latest` and fall back to the previous stable one. To get the newest release immediately, pin the version:
->
-> ```sh
-> dsh plugin --profile web add dsh-noteboard@<version>
-> ```
 
 For local development, link it:
 

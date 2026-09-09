@@ -97,7 +97,22 @@
 
 需要 `dsh` CLI（`>= 0.1.2-rc.1`），Node `>= 22.19.0`。
 
-**从 GitHub（当前）**
+**从 npm（推荐）**
+
+```sh
+dsh plugin --profile web add dsh-noteboard
+dsh web
+```
+
+npm 安装的是**预构建产物**，无需在本地执行构建脚本，也不会触发 pnpm 的构建授权确认。
+
+> 如果 `add` 装到的不是最新版本：这是 pnpm 的 `minimumReleaseAge`（最小发布年龄）安全机制在起作用——默认 **24 小时**内不会把刚发布的版本当作 `latest` 解析，而是回退到上一个稳定版。想立即装最新版，显式指定版本号即可：
+>
+> ```sh
+> dsh plugin --profile web add dsh-noteboard@<版本号>
+> ```
+
+**从 GitHub 源码**
 
 ```sh
 dsh plugin --profile web add github:boogoo619/dsh-noteboard
@@ -112,19 +127,6 @@ dsh web
 > ```
 >
 > 然后重新执行 `add`。**该授权允许本包代码在安装时于你的机器上执行**——请只对可信来源授权，并锁定 commit（`github:boogoo619/dsh-noteboard#<sha>`）。
-
-**从 npm（包发布后可用）**
-
-```sh
-dsh plugin --profile web add dsh-noteboard
-dsh web
-```
-
-> 如果 `add` 装到的不是最新版本：这是 pnpm 的 `minimumReleaseAge`（最小发布年龄）安全机制在起作用——默认 **24 小时**内不会把刚发布的版本当作 `latest` 解析，而是回退到上一个稳定版。想立即装最新版，显式指定版本号即可：
->
-> ```sh
-> dsh plugin --profile web add dsh-noteboard@<版本号>
-> ```
 
 本地开发使用 link：
 
