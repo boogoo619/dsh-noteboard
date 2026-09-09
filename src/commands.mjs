@@ -4,6 +4,7 @@ import { rearrangeNodes, orderedNodes } from './layout.mjs'
 import { distill, distillWithRoute, listLlmOptions, resolveModel } from './distill.mjs'
 import { resolvePreferences } from './preferences.mjs'
 import { randomUUID } from 'node:crypto'
+import { canonicalWorkspaceRoot } from './workspace-root.mjs'
 import { validateSource } from './sources.mjs'
 import { nodeKind, nodeText, headingTag, normalizeNode, detachHeading, suppressHeading, applyManualNodes } from './nodes.mjs'
 
@@ -286,11 +287,14 @@ export function buildApi() {
     },
   }
   const reads = new Set(['state', 'query', 'history', 'llmOptions'])
-  for (const [method, fn] of Object.entries(methods)) api[method] = (root, args = {}) => serialized(root, async () => {
-    if (method !== 'llmOptions') await store.scaffold(root)
-    if (reads.has(method) || method === 'switchCanvas') return fn(root, args)
-    return transaction(root, labels[method] ?? method, () => fn(root, args), { historyLimit: preferences().historyLimit })
-  })
+  for (const [method, fn] of Object.entries(methods)) api[method] = async (rawRoot, args = {}) => {
+    const root = await canonicalWorkspaceRoot(rawRoot)
+    return serialized(root, async () => {
+      if (method !== 'llmOptions') await store.scaffold(root)
+      if (reads.has(method) || method === 'switchCanvas') return fn(root, args)
+      return transaction(root, labels[method] ?? method, () => fn(root, args), { historyLimit: preferences().historyLimit })
+    })
+  }
   api.createNote = async (root, args = {}) => { const result = await api.createNotes(root, { ...args, notes: [args] }); return { ...result, ...(result.note ? { path: `.noteboard/notes/${result.note.file}` } : {}) } }
   api.updateNote = (root, args) => api.updateNotes(root, args)
   api.setNoteColor = api.updateNote

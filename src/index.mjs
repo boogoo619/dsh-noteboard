@@ -1,6 +1,7 @@
 import { buildApi } from './commands.mjs'
 import { registerSettings } from './settings.mjs'
 import { registerIntelligence } from './intelligence.mjs'
+import { parseWorkspaceRoot } from './workspace-root.mjs'
 export { buildApi } from './commands.mjs'
 export const name = 'noteboard'
 export const inject = ['webServer']
@@ -15,7 +16,7 @@ export function apply(ctx) {
     try {
       if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: '仅接受 POST' })); return }
       const root = new URL(req.url, 'http://localhost').searchParams.get('root')
-      if (!root?.startsWith('/')) throw new Error('缺少工作区 root')
+      parseWorkspaceRoot(root)
       let raw = ''
       for await (const chunk of req) { raw += chunk; if (raw.length > 4_000_000) throw new Error('请求过大') }
       const { method, args } = JSON.parse(raw)

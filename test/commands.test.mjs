@@ -82,3 +82,15 @@ describe('recoverable commands', () => {
     expect((await api.state(root)).canvases).toEqual(['Other'])
   })
 })
+
+describe('journal keys', () => {
+  it('records forward-slash workspace-relative keys on every platform', async () => {
+    const created = await api.createNote(root, { title: '日记', body: '正文' })
+    const journal = JSON.parse(await readFile(join(root, '.noteboard/history', `${created.operationId}.json`), 'utf8'))
+    expect(journal.files.length).toBeGreaterThan(0)
+    for (const file of journal.files) {
+      expect(file.path).toMatch(/^\.noteboard\//)
+      expect(file.path).not.toContain('\\')
+    }
+  })
+})

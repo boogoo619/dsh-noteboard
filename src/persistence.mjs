@@ -1,7 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile, rename, rm, readdir } from 'node:fs/promises'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join } from 'node:path'
+import { toRelKey, fromRelKey, workspaceQueueKey } from './workspace-root.mjs'
 
 const transactions = new AsyncLocalStorage()
 const queues = new Map()
@@ -22,7 +23,7 @@ export async function atomicWrite(path, text) {
   const before = await contents(path)
   if (before === text) return
   if (tx) {
-    const key = relative(tx.root, path)
+    const key = toRelKey(tx.root, path)
     const prior = tx.files.find((f) => f.path === key)
     if (prior) { prior.after = text; prior.completed = false; record = prior }
     else { record = { path: key, before, after: text, applied: before, completed: false }; tx.files.push(record) }
@@ -33,7 +34,7 @@ export async function atomicWrite(path, text) {
 }
 export const atomicRemove = (path) => atomicWrite(path, null)
 export function serialized(root, run) {
-  const key = resolve(root)
+  const key = workspaceQueueKey(root)
   const next = (queues.get(key) ?? Promise.resolve()).catch(() => {}).then(run)
   queues.set(key, next)
   void next.finally(() => { if (queues.get(key) === next) queues.delete(key) }).catch(() => {})
@@ -52,7 +53,8 @@ export async function history(root) {
 }
 export async function transaction(root, label, run, { historyLimit = 50 } = {}) {
   const id = randomUUID()
-  const tx = { id, root: resolve(root), journal: join(resolve(root), '.noteboard/history', `${id}.json`),
+  const identity = workspaceQueueKey(root)
+  const tx = { id, root: identity, journal: join(identity, '.noteboard/history', `${id}.json`),
     label, created: new Date().toISOString(), status: 'pending', files: [] }
   try {
     const value = await transactions.run(tx, run)
@@ -74,8 +76,7 @@ export async function restoreOperation(root, id) {
   if (!entry || entry.status === 'restored') throw new Error('操作不存在或已恢复')
   const changes = []
   for (const f of entry.files) {
-    if (!f.path.startsWith('.noteboard/') || f.path.startsWith('.noteboard/history/') || f.path.includes('..')) throw new Error('操作路径无效')
-    const path = join(root, f.path)
+    const path = fromRelKey(root, f.path)
     const current = await contents(path)
     if (current !== f.after && current !== f.before && (!Object.hasOwn(f, 'applied') || current !== f.applied)) throw new Error(`恢复冲突：${f.path} 已再次修改`)
     if (current !== f.before) changes.push({ path, before: f.before })
