@@ -48,21 +48,34 @@ const CANONICAL_CACHE_LIMIT = 64
  * Canonical workspace identity: the {@link workspaceQueueKey} form mapped
  * through `realpath` when the directory exists (removes symlink and
  * drive-letter case variants so one workspace keeps one write queue and one
- * operation journal). Only realpath results are cached — the fallback is
- * recomputed per call, so a root first requested before its directory
- * existed upgrades on the next call instead of keeping an unresolved
- * identity forever.
+ * operation journal). The drive-letter rule belongs to BOTH branches — the
+ * value `realpath` returns is normalized exactly like the fallback, so the
+ * identity is always a fixed point of {@link workspaceQueueKey} and cannot
+ * depend on how the caller spelled the drive.
+ *
+ * Only realpath results are cached — the fallback is recomputed per call, so a
+ * root first requested before its directory existed upgrades on the next call
+ * instead of keeping an unresolved identity forever.
+ *
+ * Boundary: aliases only `realpath` can see (symlink targets, Windows 8.3
+ * short names) are therefore resolved only once the directory exists — the
+ * identity of a not-yet-existing root may upgrade when it is first created.
+ * Callers must not cache an identity across that moment.
+ *
+ * `realpathImpl` is injectable for the same reason `pathImpl` is: it lets a
+ * test drive the realpath branch on a host whose own filesystem can never
+ * produce that shape (a Windows drive letter on macOS, say).
  */
-export async function canonicalWorkspaceRoot(input, pathImpl = nodePath) {
+export async function canonicalWorkspaceRoot(input, pathImpl = nodePath, realpathImpl = realpath) {
   const value = parseWorkspaceRoot(input, pathImpl)
   const cached = canonicalCache.get(value)
   if (cached) return cached
   const fallback = workspaceQueueKey(value, pathImpl)
   try {
-    const real = await realpath(fallback)
+    const identity = workspaceQueueKey(await realpathImpl(fallback), pathImpl)
     if (canonicalCache.size >= CANONICAL_CACHE_LIMIT) canonicalCache.delete(canonicalCache.keys().next().value)
-    canonicalCache.set(value, real)
-    return real
+    canonicalCache.set(value, identity)
+    return identity
   } catch { return fallback }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "dsh-noteboard",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Noteboard for the dsh web GUI: a workspace-wide infinite canvas of Markdown sticky notes (.noteboard/), with multi-canvas layouts, tag rearrange, conversation text capture, and an AI distill path.",
   "type": "module",
   "main": "lib/index.mjs",
