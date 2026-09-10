@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { buildApi } from '../src/commands.mjs'
 import { parseFrontmatter, writeCanvas, readCanvas } from '../src/store.mjs'
 import { transaction, atomicWrite, restoreOperation, history } from '../src/persistence.mjs'
+import { canonicalWorkspaceRoot } from '../src/workspace-root.mjs'
 let root, api
 beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'noteboard-v2-')); api = buildApi(); await api.state(root) })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
@@ -92,5 +93,17 @@ describe('journal keys', () => {
       expect(file.path).toMatch(/^\.noteboard\//)
       expect(file.path).not.toContain('\\')
     }
+  })
+
+  /**
+   * The journal's workspace identity is the canonical root itself — the
+   * canonical form is a fixed point of the queue key, so normalizing the drive
+   * letter inside the realpath branch cannot rewrite what is already on disk in
+   * `.noteboard/history/`. That is what makes this change migration-free.
+   */
+  it('stores the canonical root as the journal identity', async () => {
+    const created = await api.createNote(root, { title: '身份', body: '正文' })
+    const journal = JSON.parse(await readFile(join(root, '.noteboard/history', `${created.operationId}.json`), 'utf8'))
+    expect(journal.root).toBe(await canonicalWorkspaceRoot(root))
   })
 })

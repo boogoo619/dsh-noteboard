@@ -190,7 +190,8 @@ npm run build       # tsdown 构建：Host 服务 + 客户端 bundle → lib/
 工作区 root 支持 macOS / Linux 的 `/path/to/ws` 与 Windows 的 `C:\path\to\ws`、`C:/path/to/ws`、UNC `\\server\share\ws`。实现约定：
 
 - 路径形式判断（是否绝对路径、分隔符、大小写）只允许发生在 `src/workspace-root.mjs`，全仓其余模块拿到的都是规范化后的 root（`test/path-hygiene.test.mjs` 用静态扫描强制这一点）；
-- 规范形 = `resolve` + Windows 盘符小写，目录存在时再经 `realpath` 消除符号链接与盘符大小写变体（UNC 服务器名大小写不处理），保证同一工作区共享同一把写队列与同一份操作记录；
+- 规范形 = `resolve` + Windows 盘符小写，目录存在时再经 `realpath` 消除符号链接与盘符大小写变体（UNC 服务器名大小写不处理）；**realpath 的结果同样过这道盘符小写**，规范形因此恒为写队列键的定点，保证同一工作区共享同一把写队列与同一份操作记录；
+- 符号链接与 Windows 8.3 短名别名只有目录存在后才能消除，所以规范形可能在该目录首次创建后升级为解析后的形态；调用方不得在此之前长期缓存 root 身份；
 - 操作日志（`.noteboard/history/`）中的文件键在所有平台统一为正斜杠的工作区相对路径；
 - CI 在 macOS / Ubuntu / Windows 三个平台运行同一套测试（`.github/workflows/ci.yml`）。
 
