@@ -50,8 +50,16 @@ export function createIntegration(ctx: any) {
     registerView(id: string, view: any) { views.set(id, view); notify() },
     unregisterView(id: string) { views.delete(id) },
     async openView(sessionId: string, view: string, focus = '') {
-      ctx.sessions.open(sessionId)
+      // dsh 0.2 moved session navigation to the workspace view owner
+      // (`uiWorkspace.openSession`); `sessions.open` only exists on dsh <= 0.1.
+      const workspace = ctx.get('uiWorkspace')
+      if (workspace?.openSession) workspace.openSession(sessionId)
+      else ctx.sessions.open?.(sessionId)
       const control: any = await waitFor(() => controllers.get(sessionId), api.subscribe, abort.signal)
+      // activate() materializes a Conversation assembly TARGET (e.g. the chat
+      // snapshot); it is beneficial for 'chat' and a harmless no-op for view
+      // ids like 'noteboard'. The visible tab switch happens below through the
+      // borrowed ConversationStore action.
       ctx.get('uiConversation')?.binding(sessionId)?.activate(view)
       control.openView(view, focus)
     },
