@@ -1,6 +1,5 @@
 import React, { useEffect, useId, useState } from 'react'
 import { ChevronDown, RotateCcw, RefreshCw, Sparkles } from 'lucide-react'
-import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rpc } from './api'
 import { COLOR_NAMES, IconButton } from './ui'
 import { renderMarkdown } from './markdown'
@@ -38,7 +37,7 @@ export function NoteboardSettingsCard({ preferences }: { preferences: Preference
     return <section className="nb-set-section" aria-label={title}><header><h3>{title}</h3><IconButton icon={RotateCcw} label={`恢复${title}默认值`} disabled={disabled} onClick={() => preferences.reset(groups[title])}/></header>{children}</section>
   }
   function select(key: PreferenceKey, label: string, choices: [string | number, string][], hint?: string) {
-    return <div className="nb-set-field"><label htmlFor={`${id}-${key}`}>{label}</label><div className="nb-set-select-wrap"><select id={`${id}-${key}`} className="nb-set-select" disabled={disabled} value={String(value[key])} onChange={(e) => key === 'provider' ? preferences.setProvider(e.target.value) : preferences.set(key, key === 'historyLimit' ? Number(e.target.value) : e.target.value)}>{choices.map(([v, text]) => <option key={v} value={v}>{text}</option>)}</select><span className="nb-set-select-arrow" aria-hidden="true"><IconChevronDownOutline14 size={14}/></span></div>{hint && <p className="nb-set-hint">{hint}</p>}</div>
+    return <div className="nb-set-field"><label htmlFor={`${id}-${key}`}>{label}</label><div className="nb-set-select-wrap"><select id={`${id}-${key}`} className="nb-set-select" disabled={disabled} value={String(value[key])} onChange={(e) => key === 'provider' ? preferences.setProvider(e.target.value) : preferences.set(key, key === 'historyLimit' ? Number(e.target.value) : e.target.value)}>{choices.map(([v, text]) => <option key={v} value={v}>{text}</option>)}</select><span className="nb-set-select-arrow" aria-hidden="true"><ChevronDown size={14}/></span></div>{hint && <p className="nb-set-hint">{hint}</p>}</div>
   }
   function toggle(key: PreferenceKey, label: string) {
     return <label className="nb-set-toggle"><span>{label}</span><input type="checkbox" role="switch" checked={Boolean(value[key])} disabled={disabled} onChange={(e) => preferences.set(key, e.target.checked)}/></label>
@@ -54,7 +53,7 @@ export function NoteboardSettingsCard({ preferences }: { preferences: Preference
   const missingProvider = value.provider && !options?.providers.some((p) => p.id === value.provider)
   const missingModel = value.model && !models.some((m) => m.id === value.model)
   const status = state.status === 'loading' ? '读取中…' : state.status === 'unavailable' ? '设置暂不可用' : !state.writable ? '只读' : state.error ? `保存失败：${state.error}` : state.saving ? '保存中…' : state.dirty ? '尚未保存' : state.saved ? '已保存' : '更改即保存'
-  return <li className="nb-set-card">
+  return <div className="nb-set-card">
     <button type="button" className="nb-set-header" aria-expanded={open} aria-controls={`${id}-body`} onClick={() => { if (open) void preferences.flush().catch(() => {}); setOpen(!open) }}>
       <span><strong>便签画布</strong><span className="nb-set-description">采集、画布交互与 AI 提炼偏好</span></span><ChevronDown size={18} className={open ? 'nb-set-chevron-open' : ''}/>
     </button>
@@ -80,5 +79,5 @@ export function NoteboardSettingsCard({ preferences }: { preferences: Preference
       {section('数据与恢复', select('historyLimit', '历史记录保留数量', [[50, '最近 50 次'], [100, '最近 100 次'], [200, '最近 200 次']], '各工作区分别保留。减少数量后，在该工作区下一次成功写操作完成时清理超额旧记录；便签和画布文件不受影响。'))}
       <footer className="nb-set-footer"><span className={state.error ? 'nb-set-error' : 'nb-set-hint'} role={state.error ? 'alert' : 'status'}>{status}</span>{state.error && <IconButton icon={RefreshCw} label="重试保存" disabled={!state.writable || state.saving} onClick={() => void preferences.flush().catch(() => {})}/>}</footer>
     </div>}
-  </li>
+  </div>
 }

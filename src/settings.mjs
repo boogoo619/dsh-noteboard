@@ -1,7 +1,15 @@
 /**
- * Durable capture, canvas, distill and history preferences:
- * one namespace served through the official settings system, edited by the
- * Plugins-tab card (`settings.plugin.item`, keyed by this namespace).
+ * Durable capture, canvas, distill and history preferences.
+ *
+ * dsh 0.2: served as this plugin entry's own Config (see `Config` below) —
+ * the sidebar Plugins page renders a form from it, the host reads the live
+ * value through `ctx.fiber.config`, and the browser half syncs through
+ * `configForms.get('noteboard')` (entry id, must match cordis.patch.yml).
+ *
+ * dsh <= 0.1 legacy: one namespace served through the former settings
+ * system, edited by the retired Plugins-tab card (`settings.plugin.item`,
+ * keyed by this namespace). `registerSettings` keeps that path alive; it
+ * no-ops on 0.2, where `ctx.settings` has no `register`.
  *
  * Registration is REACTIVE: the settings provider may mount after this row
  * activates (it did on the deployed profile, which is why the card never
@@ -15,11 +23,25 @@ import { DEFAULT_PREFERENCES, PREFERENCE_CHOICES } from './preferences.mjs'
 
 export const NAMESPACE = 'noteboard'
 
-export const NoteboardSettingsSchema = z.object(Object.fromEntries(
-  Object.entries(DEFAULT_PREFERENCES).map(([key, value]) => [key,
-    (PREFERENCE_CHOICES[key] ? z.union(PREFERENCE_CHOICES[key]) : typeof value === 'boolean' ? z.boolean() : z.string()).default(value),
-  ]),
+const preferenceSchema = (volatile) => z.object(Object.fromEntries(
+  Object.entries(DEFAULT_PREFERENCES).map(([key, value]) => {
+    const field = PREFERENCE_CHOICES[key] ? z.union(PREFERENCE_CHOICES[key]) : typeof value === 'boolean' ? z.boolean() : z.string()
+    // `.volatile()` arrived in schemastery 3.18.4 (the version dsh 0.2 ships);
+    // guard so an older dev-side resolution only loses live-apply, not the build.
+    const marked = volatile && typeof field.volatile === 'function' ? field.volatile() : field
+    return [key, marked.default(value)]
+  }),
 ))
+
+export const NoteboardSettingsSchema = preferenceSchema(false)
+
+/**
+ * dsh 0.2 plugin-entry Config: the same preference fields, each marked
+ * volatile so Plugins-page edits apply live (config-only fiber updates never
+ * restart the plugin). Served through the entry's settings form, keyed by the
+ * loader entry id (`noteboard` in cordis.patch.yml).
+ */
+export const Config = preferenceSchema(true)
 
 /**
  * Register the namespace whenever a settings provider is mounted and return a

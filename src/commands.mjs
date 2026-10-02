@@ -3,6 +3,7 @@ import { serialized, transaction, history, restoreOperation, revision } from './
 import { rearrangeNodes, orderedNodes } from './layout.mjs'
 import { distill, distillWithRoute, listLlmOptions, resolveModel } from './distill.mjs'
 import { resolvePreferences } from './preferences.mjs'
+import { isVolatile } from '@deepseek-ai/cosmokit'
 import { randomUUID } from 'node:crypto'
 import { canonicalWorkspaceRoot } from './workspace-root.mjs'
 import { validateSource } from './sources.mjs'
@@ -14,8 +15,16 @@ const checkVersion = (actual, expected) => { if (expected && actual !== expected
 const labels = { updateNotes: '修改便签', createNotes: '创建便签', createText: '创建文本', updateText: '修改文本', duplicateText: '复制文本', removeNodes: '移除画布对象', layout: '整理布局', removeNotes: '从画布移除', addNotes: '放回画布', writeCanvas: '移动画布对象', saveAsNew: '另存为新画布', deleteCanvas: '删除画布', restoreOperation: '恢复操作' }
 
 export function buildApi() {
-  const api = { llm: null, settingsHandle: null }
-  const preferences = () => resolvePreferences(api.settingsHandle?.get())
+  const api = { llm: null, settingsHandle: null, config: {} }
+  // dsh 0.2 preference source is the entry Config (api.config, set by
+  // index.mjs to the live fiber config); the served-namespace handle only
+  // exists on dsh <= 0.1 and reports undefined on 0.2. Volatile Config fields
+  // resolve to stable references — unwrap each through `.get()` so reads
+  // always answer the latest committed snapshot (live-apply).
+  const plainConfig = (value) => Object.fromEntries(
+    Object.entries(value ?? {}).map(([key, field]) => [key, isVolatile(field) ? field.get() : field]),
+  )
+  const preferences = () => resolvePreferences(plainConfig(api.settingsHandle?.get() ?? api.config))
   async function state(root) {
     await store.scaffold(root)
     const meta = await store.readMeta(root), canvases = await store.listCanvases(root)
@@ -306,7 +315,7 @@ export function buildApi() {
     const s = await api.state(root)
     const canvasName = args.canvasName ?? s.meta.activeCanvas
     if (!api.llm) throw new Error('llm 服务不可用，无法提炼')
-    const result = await distill(api.llm, String(args.text ?? ''), api.settingsHandle?.get() ?? {})
+    const result = await distill(api.llm, String(args.text ?? ''), preferences())
     return api.createNote(root, { ...result, canvasName, source: args.source, center: args.center })
   }
   api.distillPreview = async (_root, args = {}) => {

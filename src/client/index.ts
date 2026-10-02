@@ -1,16 +1,19 @@
 /**
  * Noteboard, browser half (`dsh-noteboard/client`).
  *
- * Registers three slots (all additive; all lifecycle on the plugin Fiber):
- * - `conversation.view`  → the 画布 tab (workspace-wide data, session-scoped mount)
- * - `shell.overlay`      → text-selection capture buttons + result toast
- * - `settings.plugin.item` → Collapsible plugin preferences
+ * Registers slots (all additive; lifecycle on the plugin Fiber):
+ * - `conversation.view`    → the 画布 tab (workspace-wide data, session-scoped mount)
+ * - `shell.overlay`        → text-selection capture buttons + result toast
+ * - `plugins.bundle.config` → the bundle's configuration page on the dsh 0.2
+ *   sidebar Plugins page (keyed by npm package name); the dsh <= 0.1
+ *   Settings → Plugins tab card (`settings.plugin.item`) stays registered for
+ *   older hosts — exactly one slot exists per dsh generation.
  *
- * The settings card registers through a scoped `ctx.inject(['settingsScope'])`
- * so it appears the moment the settings transport mounts (and disappears with
- * it) — a synchronous `ctx.get('settingsScope')` raced the boot order, bound a
- * null scope and produced the "settings panel missing" failure, while the
- * canvas tab itself must never depend on that transport.
+ * Preference values: dsh 0.2 serves the entry's Config form through
+ * `configForms.get('noteboard')` (keyed by the loader entry id, which must
+ * match cordis.patch.yml); dsh <= 0.1 bound the served namespace through the
+ * now-retired `settingsScope` service. Both wires are attached reactively —
+ * the inject of the generation that is absent simply never fires.
  */
 import { createElement } from 'react'
 import { CanvasView } from './canvas/CanvasView'
@@ -23,6 +26,8 @@ import { createComposer } from './composer'
 import { createPreferences } from './preferences'
 
 const NS = 'noteboard'
+/** npm package name — the key `plugins.bundle.config` dispatches on (dsh 0.2). */
+const PACKAGE_NAME = 'dsh-noteboard'
 
 export default {
   // `sessions` resolves the current session (回链 + workspace cwd) for the
@@ -62,11 +67,21 @@ export default {
       order: 500,
     }, (props: any) => createElement(CaptureOverlay, { ...props, sessions, conversation, integration, preferences }))))
 
-    // Plugins-tab settings card, keyed by the Host-served 'noteboard'
-    // namespace. The slot changed shape between dsh releases: register BOTH
-    // the keyed form (key = namespace) and the older list form — the
-    // dual-shape trick dsh-focus-overlay uses; unknown options are ignored.
-    // Registered only while the settings scope service is mounted.
+    // dsh 0.2 — preference values come from the entry's Config form
+    // (`configForms.get`, keyed by the loader entry id). The same protocol as
+    // the legacy scope (getSnapshot {status,value,writable} / subscribe /
+    // mutate), so `preferences.attach` binds it unchanged.
+    ctx.inject(['configForms'], (scopeCtx: any) => {
+      const forms = scopeCtx?.configForms
+      if (!forms || typeof forms.get !== 'function') return
+      return scopeCtx.effect(() => preferences.attach(forms.get(NS)))
+    })
+
+    // dsh <= 0.1 legacy — the settings transport bound the served namespace.
+    // The slot changed shape between dsh 0.1 releases: register BOTH the keyed
+    // form (key = namespace) and the older list form — the dual-shape trick
+    // dsh-focus-overlay uses; unknown options are ignored. On dsh 0.2 neither
+    // the service nor the slot exists, so this whole branch stays dormant.
     ctx.inject(['settingsScope'], (scopeCtx: any) => {
       const scope = scopeCtx?.settingsScope
       if (!scope || typeof scope.bind !== 'function') return
@@ -78,5 +93,13 @@ export default {
         order: 500,
       }, () => createElement(NoteboardSettingsCard, { preferences }))))
     })
+
+    // dsh 0.2 — the bundle's own configuration page on the sidebar Plugins
+    // page, keyed by npm package name. The page draws the title/icon/crumb and
+    // the save control itself and only ever asks for `view: 'page'`.
+    ctx.effect(() => slots.inject('plugins.bundle.config', () => slots.register({
+      name: 'plugins.bundle.config',
+      key: PACKAGE_NAME,
+    }, () => createElement(NoteboardSettingsCard, { preferences }))))
   },
 }
