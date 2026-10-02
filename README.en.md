@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://badgen.net/badge/license/MIT/green" alt="license">
-  <img src="https://badgen.net/badge/dsh/%3E%3D0.1.2-rc.1/blue" alt="dsh version">
+  <img src="https://badgen.net/badge/dsh/%3E%3D0.2.0--rc.2/blue" alt="dsh version">
   <img src="https://badgen.net/badge/node/%3E%3D22.19/blue" alt="node version">
 </p>
 
@@ -95,7 +95,7 @@ Historical discovery and reads use the host's `sessionQuery` service; the curren
 
 ## Install 📦
 
-Requires the `dsh` CLI (`>= 0.1.2-rc.1`) and Node `>= 22.19.0`.
+Requires the `dsh` CLI (`>= 0.2.0-rc.2`) and Node `>= 22.19.0`.
 
 **From npm (recommended)**
 
@@ -152,7 +152,7 @@ Restart `dsh web` after installing.
 
 ## Settings ⚙️
 
-Under "Settings → Plugins", expand the initially collapsed Noteboard entry. Preferences are saved by the host and apply across workspaces; viewport positions remain separate for each workspace and canvas.
+Open the dsh-noteboard detail page in the sidebar's Plugins section; its "Configure" area holds the Noteboard preferences (as of dsh 0.2, plugin configuration moved from the Settings page into the sidebar Plugins page). Preferences are saved by the host, apply live, and cover every workspace; viewport positions remain separate for each workspace and canvas.
 
 | Option | Description |
 | --- | --- |

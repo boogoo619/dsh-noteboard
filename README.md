@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://badgen.net/badge/license/MIT/green" alt="license">
-  <img src="https://badgen.net/badge/dsh/%3E%3D0.1.2-rc.1/blue" alt="dsh version">
+  <img src="https://badgen.net/badge/dsh/%3E%3D0.2.0--rc.2/blue" alt="dsh version">
   <img src="https://badgen.net/badge/node/%3E%3D22.19/blue" alt="node version">
 </p>
 
@@ -95,7 +95,7 @@
 
 ## 安装 📦
 
-需要 `dsh` CLI（`>= 0.1.2-rc.1`），Node `>= 22.19.0`。
+需要 `dsh` CLI（`>= 0.2.0-rc.2`），Node `>= 22.19.0`。
 
 **从 npm（推荐）**
 
@@ -152,7 +152,7 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 
 ## 设置 ⚙️
 
-侧栏「设置 → 插件」中的「便签画布」默认折叠，展开后按以下四组配置。偏好通过宿主保存，作用于各工作区；画布视图位置按工作区和画布分别记忆。
+侧栏「插件」打开 dsh-noteboard 的详情页，「配置」区即为便签画布偏好（dsh 0.2 起，插件配置从「设置」页移入侧栏插件页）。偏好通过宿主保存并实时生效，作用于各工作区；画布视图位置按工作区和画布分别记忆。
 
 | 选项 | 说明 |
 | --- | --- |
