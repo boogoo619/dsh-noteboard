@@ -53,7 +53,7 @@ export async function readSourceSession(query, current, args = {}) {
     const role = event.type === 'user/message' && event.data.source?.kind === 'user' ? 'user' : event.type === 'assistant/message' ? 'assistant' : null
     if (!role || !roles.includes(role)) continue
     const content = role === 'user' ? event.data.content : event.data.message.content
-    nonTextBlocks += content.filter((b) => b.type !== 'text' && b.type !== 'thinking' && b.type !== 'reasoning' && b.type !== 'tool-call').length
+    nonTextBlocks += content.filter((b) => b.type !== 'text' && b.type !== 'reasoning' && b.type !== 'tool-call').length
     const text = content.filter((b) => b.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('\n')
     if (text) candidates.push({ seq: event.seq, time: event.time, role, text })
   }

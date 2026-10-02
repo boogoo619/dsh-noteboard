@@ -1,12 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowUp, ArrowUpRight, BotMessageSquare, ChevronDown, Hand, LoaderCircle, MousePointer2, Square, StickyNote, Type, X } from 'lucide-react'
-import * as primitives from '@deepseek-ai/dsh-client-ui-primitives'
 import { IconButton } from './ui'
 import { createReplyTracker, type Reply } from './replies'
 
-const SendIcon = primitives.IconSendOutline14 ?? ArrowUp
-const CollapseIcon = primitives.IconChevronDownOutline14 ?? ChevronDown
+// dsh 0.2 removed the outline icon exports from dsh-client-ui-primitives;
+// lucide equivalents ship with the bundle, so use them directly.
+const SendIcon = ArrowUp
+const CollapseIcon = ChevronDown
 
 type DockState = { active: boolean; expanded: boolean; available: boolean; takeover: boolean; focus: number; toolsVersion: number; toolMode: 'select' | 'pan'; status: string; error: string }
 const EMPTY: DockState = { active: false, expanded: false, available: false, takeover: false, focus: 0, toolsVersion: 0, toolMode: 'select', status: '', error: '' }

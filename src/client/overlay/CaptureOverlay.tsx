@@ -28,7 +28,9 @@ export function captureSelection(sessions: any, integration?: any): Capture | nu
     const prefix = document.createRange(); prefix.selectNodeContents(row); prefix.setEnd(local.startContainer, local.startOffset)
     const offset = prefix.toString().length, full = row.textContent ?? ''
     const key = row.dataset.chatAnchorKey!
-    const seq = Number(row.dataset.seq ?? row.dataset.messageSeq ?? integration?.anchorSeq(current.sessionId, key))
+    // dsh 0.2 rows carry no data-seq markers; the authoritative seq comes
+    // from the chat snapshot's anchorSeq for the row's anchor key.
+    const seq = Number(integration?.anchorSeq(current.sessionId, key))
     const turn = Number(row.dataset.chatTurn)
     fragments.push({ key, ...(Number.isFinite(seq) ? { seq } : {}), ...(Number.isFinite(turn) ? { turn } : {}), text, start: offset, end: offset + text.length, prefix: full.slice(Math.max(0, offset - 48), offset), suffix: full.slice(offset + text.length, offset + text.length + 48) })
   }

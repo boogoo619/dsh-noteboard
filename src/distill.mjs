@@ -20,10 +20,10 @@ export async function listLlmOptions(llm) {
   if (!llm) throw new Error('模型服务不可用')
   const providers = llm.listProviders() ?? []
   return Promise.all(providers.map(async (p) => {
-    const id = p.id ?? p.provider ?? p
+    const id = p.id
     try {
       const models = await llm.listModels(id)
-      return { id, name: p.name ?? id, models: (models ?? []).map((m) => ({ id: m.id ?? m.model ?? m, name: m.name ?? m.id ?? m.model ?? m })) }
+      return { id, name: p.name ?? id, models: (models ?? []).map((m) => ({ id: m.id, name: m.name ?? m.id })) }
     } catch (e) { return { id, name: p.name ?? id, models: [], error: `无法读取模型提供方 ${p.name ?? id}：${e.message}` } }
   }))
 }
