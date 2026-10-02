@@ -53,8 +53,22 @@ try {
   await page.getByRole('button', { name: '继续', exact: true }).click({ timeout: 1500 }).catch(() => {})
   await page.getByRole('button', { name: '稍后配置', exact: true }).click({ timeout: 1500 }).catch(() => {})
   await page.getByRole('button', { name: '完成', exact: true }).click({ timeout: 1500 }).catch(() => {})
-  await page.getByRole('button', { name: '设置', exact: true }).click()
-  await page.getByRole('button', { name: '插件', exact: true }).click()
+  const openCard = async () => {
+    // dsh 0.2: the card lives on the sidebar Plugins page's bundle detail
+    // (deep-linkable via pluginNavigation). Fall back to the retired
+    // Settings → Plugins tab navigation on older hosts.
+    const linked = await page.evaluate(() => {
+      const nav = window.__nbSettingsTest?.ctx.get?.('pluginNavigation')
+      if (!nav || typeof nav.openBundle !== 'function') return false
+      nav.openBundle('dsh-noteboard')
+      return true
+    })
+    if (!linked) {
+      await page.getByRole('button', { name: '设置', exact: true }).click()
+      await page.getByRole('button', { name: '插件', exact: true }).click()
+    }
+  }
+  await openCard()
   await reset()
   const header = card.locator('.nb-set-header')
   await expect(header).toHaveAttribute('aria-expanded', 'false')
@@ -72,8 +86,7 @@ try {
   await page.reload()
   await page.waitForFunction(() => window.__nbSettingsTest?.preferences.getSnapshot().status === 'ready')
   await page.getByRole('button', { name: '稍后配置', exact: true }).click({ timeout: 1500 }).catch(() => {})
-  await page.getByRole('button', { name: '设置', exact: true }).click()
-  await page.getByRole('button', { name: '插件', exact: true }).click()
+  await openCard()
   await header.click()
   await expect(card.getByRole('switch', { name: '显示背景网格' })).not.toBeChecked()
   await expect(card.getByRole('button', { name: '蓝色', exact: true })).toHaveAttribute('aria-pressed', 'true')
@@ -88,7 +101,10 @@ try {
   await page.screenshot({ path: join(artifacts, 'expanded-desktop-light.png') })
   console.log('PASS: keyboard collapse, persistent settings, independent group reset')
   await page.evaluate(() => {
-    const { ctx, preferences } = window.__nbSettingsTest, scope = ctx.get('settingsScope').bind({ namespace: 'noteboard' })
+    // dsh 0.2: values ride the entry Config form (configForms.get, keyed by
+    // the loader entry id); dsh <= 0.1 bound the served namespace instead.
+    const { ctx, preferences } = window.__nbSettingsTest
+    const scope = ctx.get('configForms')?.get?.('noteboard') ?? ctx.get('settingsScope').bind({ namespace: 'noteboard' })
     let fail = true
     preferences.attach({ getSnapshot: () => scope.getSnapshot(), subscribe: (fn) => scope.subscribe(fn), mutate: (ops) => { if (fail) { fail = false; return Promise.reject(new Error('测试：连接中断')) } return scope.mutate(ops) } })
   })
@@ -113,7 +129,7 @@ try {
     await page.getByRole('button', { name: '通用设置', exact: true }).click()
     await page.getByRole('button', { name: theme, exact: true }).click()
     await page.waitForFunction(() => !document.querySelector('[class*="_fading"]'))
-    await page.getByRole('button', { name: '插件', exact: true }).click()
+    await openCard()
     if (await header.getAttribute('aria-expanded') === 'false') await header.click()
     for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }]]) {
       await page.setViewportSize(viewport)
