@@ -97,6 +97,8 @@
 
 需要 `dsh` CLI（`>= 0.2.0-rc.2`），Node `>= 22.19.0`。
 
+已在 DeepSeek Harness **0.2.2-rc.1**（当前 npm `latest`）上复验：画布、侧栏插件页配置、划词采集、模型工具与 AI 提炼均正常。0.2 移除了 `sessions.list.current`，因此 0.3.1 起划词采集改用 `uiSession` 主绑定定位当前会话。
+
 **从 npm（推荐）**
 
 ```sh
@@ -135,6 +137,15 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 ```
 
 安装后重启 `dsh web` 生效。
+
+**桌面应用（Electron）**
+
+桌面端的 profile 由应用独占管理，不能用命令行 `dsh plugin --profile desktop` 操作。请在应用内安装：
+
+1. 先在本仓库执行 `npm install && npm run build`（`lib/` 不随仓库提交）。
+2. 打开应用 → 侧栏 **插件** → **添加插件** → 输入本仓库的本地绝对路径；发布后也可直接输包名。
+3. 安装完成点 **立即启用**，然后**完全退出并重启应用**（Host 半区需要重启加载）。
+4. 在 插件 → dsh-noteboard 详情确认版本 **0.3.1** 及以上、状态为运行中。0.3.0 在 dsh 0.2.2 上划词采集会静默失效。
 
 ## 数据格式 🗂️
 

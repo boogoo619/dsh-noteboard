@@ -97,6 +97,8 @@ Historical discovery and reads use the host's `sessionQuery` service; the curren
 
 Requires the `dsh` CLI (`>= 0.2.0-rc.2`) and Node `>= 22.19.0`.
 
+Verified on DeepSeek Harness **0.2.2-rc.1** (current npm `latest`): canvas, sidebar Plugins-page configuration, selection capture, model tools, and AI distill all work. Since 0.2 removed `sessions.list.current`, version 0.3.1 resolves the current Session through the `uiSession` main binding instead.
+
 **From npm (recommended)**
 
 ```sh
@@ -135,6 +137,15 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-noteboard
 ```
 
 Restart `dsh web` after installing.
+
+**Desktop app (Electron)**
+
+The desktop app owns its profile exclusively; `dsh plugin --profile desktop` is rejected. Install from inside the app instead:
+
+1. Run `npm install && npm run build` in this repository first (`lib/` is not committed).
+2. Open the app → sidebar **Plugins** → **Add plugin** → enter this repository's absolute path (or the package name once published).
+3. After installation choose **Enable now**, then **fully quit and restart the app** (the Host half loads on restart).
+4. In Plugins → dsh-noteboard confirm version **0.3.1** or later and an active state. On dsh 0.2.2, 0.3.0 silently loses selection capture.
 
 ## Data Format 🗂️
 
