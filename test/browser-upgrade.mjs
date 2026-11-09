@@ -39,7 +39,7 @@ await page.route('**/api/session/cancel', async (route) => {
   cancellations++
   const request = route.request().postDataJSON()
   await route.fulfill({ json: { type: 'server-response', rpcId: request.rpcId, result: { ok: true, value: { cancelled: true } } } })
-  await page.evaluate(() => { const ctx = window.__nbTestContext; ctx.sessions.binding(ctx.sessions.list.getSnapshot().current).session.handleRunning(false) })
+  await page.evaluate(() => { const ctx = window.__nbTestContext; ctx.sessions.binding(ctx.get('uiSession').adapter.current.getSnapshot().key).session.handleRunning(false) })
 })
 await page.route('**/noteboard/api/rpc?*', async (route) => {
   const { method, args } = route.request().postDataJSON()
@@ -176,7 +176,7 @@ try {
   await expect.poll(() => submissions.length).toBe(2)
   await expect(editor).toHaveText('')
   await expect(page.locator('[data-nb-composer-mode=input]')).toBeVisible()
-  await page.evaluate(() => { const ctx = window.__nbTestContext; ctx.sessions.binding(ctx.sessions.list.getSnapshot().current).session.handleRunning(true) })
+  await page.evaluate(() => { const ctx = window.__nbTestContext; ctx.sessions.binding(ctx.get('uiSession').adapter.current.getSnapshot().key).session.handleRunning(true) })
   await editor.fill('运行中的后续指令')
   await page.getByRole('button', { name: '排队发送', exact: true }).click()
   await expect.poll(() => submissions.length).toBe(3)
@@ -188,7 +188,7 @@ try {
   await editor.fill('接管期间保留的草稿')
   for (const kind of ['user-questions', 'plan-review']) {
     await page.evaluate((kind) => {
-      const ctx = window.__nbTestContext, React = window.__nbTestReact, sessionId = ctx.sessions.list.getSnapshot().current
+      const ctx = window.__nbTestContext, React = window.__nbTestReact, sessionId = ctx.get('uiSession').adapter.current.getSnapshot().key
       const publish = ctx.get('uiSession').registerPendingInteraction(() => 100)
       const remove = publish({ key: `noteboard-test-${kind}`, kind, sessionId }, () => {})
       let dispose

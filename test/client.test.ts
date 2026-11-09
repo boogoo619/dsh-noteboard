@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderMarkdown, escapeHtml } from '../dsh-noteboard/src/client/markdown'
+import { currentSessionOf } from '../dsh-noteboard/src/client/currentSession'
 import {
   zoomAt, clampZoom, marqueeHits, selectionCapturable, titleFromText, snap, bgGesture, wheelAction, fitCamera,
 } from '../dsh-noteboard/src/client/types'
@@ -162,5 +163,24 @@ describe('distill v2 (settings-aware parsing)', () => {
     expect(prompt).toContain('保留关键数字')
     expect(prompt).toContain('JSON')
     expect(distillPrompt('文本', { prompt: '旧指令' })).not.toContain('旧指令')
+  })
+})
+
+describe('current session lookup (dsh 0.2 uiSession binding)', () => {
+  const sessions = { list: { getSnapshot: () => ({ ids: ['s1'], byId: { s1: { cwd: '/ws', title: '标题' } }, phase: 'ready' }) } }
+  const withCurrent = (key: string | undefined) => ({ get: (name: string) => name === 'uiSession' ? { adapter: { current: { getSnapshot: () => ({ key }) } } } : undefined })
+  it('reads the uiSession main binding on dsh 0.2+', () => {
+    expect(currentSessionOf(sessions, withCurrent('s1'))).toEqual({ sessionId: 's1', cwd: '/ws', title: '标题' })
+  })
+  it('falls back to the retired list.current field on dsh 0.1', () => {
+    const legacy = { list: { getSnapshot: () => ({ current: 's1', byId: { s1: { cwd: '/ws', title: '标题' } } }) } }
+    expect(currentSessionOf(legacy, undefined)).toEqual({ sessionId: 's1', cwd: '/ws', title: '标题' })
+  })
+  it('reports no session when neither source resolves one', () => {
+    expect(currentSessionOf(sessions, withCurrent(undefined))).toEqual({ sessionId: undefined, cwd: undefined, title: '' })
+  })
+  it('uses displayTitle when the durable title is absent', () => {
+    const rows = { list: { getSnapshot: () => ({ byId: { s1: { cwd: '/ws', displayTitle: '显示名' } } }) } }
+    expect(currentSessionOf(rows, withCurrent('s1')).title).toBe('显示名')
   })
 })

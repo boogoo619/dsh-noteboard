@@ -233,7 +233,7 @@ try {
   const otherSession = await page.evaluate(async (cwd) => { const { ctx } = window.__nbSettingsTest; const id = await ctx.sessions.create({ cwd }); ctx.sessions.open(id); ctx.sessions.binding(id).session.handleBlank(false); return id }, testRoot)
   releaseCapture(); delayCapture = false
   await expect(page.locator('.nb-notices')).toContainText('已存入')
-  expect(await page.evaluate(() => window.__nbSettingsTest.ctx.sessions.list.getSnapshot().current)).toBe(otherSession)
+  expect(await page.evaluate(() => window.__nbSettingsTest.ctx.get('uiSession').adapter.current.getSnapshot().key)).toBe(otherSession)
   await expect(page.locator('.nb-root')).toHaveCount(0)
   await page.evaluate(() => document.querySelector('#noteboard-capture-fixture')?.remove())
   console.log('PASS: capture visibility, automatic focus, and session-switch protection')

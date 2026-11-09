@@ -65,7 +65,7 @@ export default {
       name: 'shell.overlay',
       id: `${NS}-capture`,
       order: 500,
-    }, (props: any) => createElement(CaptureOverlay, { ...props, sessions, conversation, integration, preferences }))))
+    }, (props: any) => createElement(CaptureOverlay, { ...props, sessions, conversation, integration, preferences, ctx }))))
 
     // dsh 0.2 — preference values come from the entry's Config form
     // (`configForms.get`, keyed by the loader entry id). The same protocol as

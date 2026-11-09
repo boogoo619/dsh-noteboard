@@ -32,11 +32,11 @@ await page.route('**/api/session/prompt', async (route) => {
   await route.fulfill({ json: { type: 'server-response', rpcId: request.rpcId, result: { ok: true, value: { accepted: true } } } })
 })
 const editor = page.locator('[data-composer-input]'), card = page.locator('[data-composer-card]'), toast = page.locator('.nb-reply-toast')
-const add = (selected) => page.evaluate(async ({ root, selected }) => { const { ctx, integration, composer } = window.__nbCompact, id = ctx.sessions.list.getSnapshot().current; await integration.addReferences(id, root, 'Main', selected); composer.expand(id) }, { root, selected })
+const add = (selected) => page.evaluate(async ({ root, selected }) => { const { ctx, integration, composer } = window.__nbCompact, id = ctx.get('uiSession').adapter.current.getSnapshot().key; await integration.addReferences(id, root, 'Main', selected); composer.expand(id) }, { root, selected })
 const screenshot = (name) => page.screenshot({ path: join(artifacts, `${name}.png`) })
 async function assistantTurn(turn, text, reason = 'completed', finish = true) {
   await page.evaluate(({ turn, text, reason, finish }) => {
-    const { ctx } = window.__nbCompact, source = ctx.sessions.binding(ctx.sessions.list.getSnapshot().current).eventSource
+    const { ctx } = window.__nbCompact, source = ctx.sessions.binding(ctx.get('uiSession').adapter.current.getSnapshot().key).eventSource
     let seq = Math.max(...source.getSnapshot().entries.map((entry) => entry.event.seq)) + 1
     const append = (type, data) => {
       source.append({ type: 'event', event: { type, data, seq: seq++, time: Date.now(), ...(type === 'assistant/message' ? { surfaceOp: 'append' } : {}) } })
@@ -81,7 +81,7 @@ try {
   await page.getByRole('button', { name: `移除引用：${first.title}`, exact: true }).click()
   await expect(page.locator('.nb-reference-chip')).toHaveCount(2)
   await expect(editor).toContainText('请比较这些便签。')
-  const remaining = await page.evaluate(() => { const { ctx } = window.__nbCompact; return ctx.get('conversation').input.for(ctx.sessions.scope(ctx.sessions.list.getSnapshot().current)).state.getSnapshot().occurrences.map((o) => JSON.parse(o.ref).ids).flat() })
+  const remaining = await page.evaluate(() => { const { ctx } = window.__nbCompact; return ctx.get('conversation').input.for(ctx.sessions.scope(ctx.get('uiSession').adapter.current.getSnapshot().key)).state.getSnapshot().occurrences.map((o) => JSON.parse(o.ref).ids).flat() })
   expect(remaining).not.toContain(first.id); expect(remaining).toContain(second.id)
   expect((await api.state(root)).notes).toHaveLength(8)
   await editor.press('Meta+z')
@@ -149,7 +149,7 @@ try {
   await expect(editor).toHaveText('')
   expect(JSON.stringify(submissions[0])).toContain('noteboard-reference')
   const insertRaw = (selected) => page.evaluate(({ root, selected }) => {
-    const { ctx } = window.__nbCompact, facade = ctx.get('conversation').input.for(ctx.sessions.scope(ctx.sessions.list.getSnapshot().current))
+    const { ctx } = window.__nbCompact, facade = ctx.get('conversation').input.for(ctx.sessions.scope(ctx.get('uiSession').adapter.current.getSnapshot().key))
     const state = facade.state.getSnapshot(), end = state.draft.length - state.occurrences.reduce((n, o) => n + o.length - 1, 0)
     const ref = JSON.stringify({ root, canvasName: 'Main', ids: selected.map((n) => n.id), titles: selected.map((n) => n.title) })
     return facade.insertReference({ source: 'noteboard', ref, label: selected[0].title, appearance: 'file', clipboardText: `@便签(${selected.map((n) => n.title).join('、')})` }, { start: end, end, draftRev: state.draftRev })
@@ -176,6 +176,6 @@ try {
   expect(errors).toEqual([])
   console.log('PASS: compact layout, colored references, preview/focus, partial removal/undo, scrolling, real host turn notifications, expiry, navigation and responsive screenshots')
 } catch (error) {
-  console.error('REPLY STATE', await page.evaluate(() => { const { ctx } = window.__nbCompact; const id = ctx.sessions.list.getSnapshot().current; const s = ctx.get('uiConversation').binding(id).target('chat').getSnapshot(); return JSON.stringify({ events: ctx.sessions.binding(id).eventSource.getSnapshot().entries.slice(-6), turns: [...(s?.timeline.turns.values() ?? [])].slice(-1).map((t) => ({ ...t, tail: t.data.get('turn-tail'), steps: t.steps.map((step) => step.data.get('assistant-step')) })) }) }).catch((e) => e.message))
+  console.error('REPLY STATE', await page.evaluate(() => { const { ctx } = window.__nbCompact; const id = ctx.get('uiSession').adapter.current.getSnapshot().key; const s = ctx.get('uiConversation').binding(id).target('chat').getSnapshot(); return JSON.stringify({ events: ctx.sessions.binding(id).eventSource.getSnapshot().entries.slice(-6), turns: [...(s?.timeline.turns.values() ?? [])].slice(-1).map((t) => ({ ...t, tail: t.data.get('turn-tail'), steps: t.steps.map((step) => step.data.get('assistant-step')) })) }) }).catch((e) => e.message))
   await screenshot('failure'); console.error('PAGE ERRORS', errors); throw error
 } finally { await browser.close(); await rm(root, { recursive: true, force: true }) }
